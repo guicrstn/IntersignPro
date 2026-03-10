@@ -9,6 +9,13 @@ export interface Company {
   phone: string | null
   email: string | null
   siret: string | null
+  // Subscription fields
+  subscription_status: 'trial' | 'active' | 'canceled' | 'past_due' | 'inactive' | null
+  subscription_plan: 'monthly' | 'annual' | 'lifetime' | null
+  subscription_end_date: string | null
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  trial_used: boolean
   created_at: string
   updated_at: string
 }
