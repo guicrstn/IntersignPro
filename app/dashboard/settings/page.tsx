@@ -7,16 +7,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Save, Building2, Upload } from 'lucide-react'
+import { Save, Building2, Upload, ImageIcon, X } from 'lucide-react'
 import type { Company } from '@/lib/types'
+import Image from 'next/image'
 
 export default function SettingsPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [company, setCompany] = useState<Company | null>(null)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -42,6 +45,7 @@ export default function SettingsPage() {
 
         if (data) {
           setCompany(data)
+          setLogoUrl(data.logo_url || null)
           setFormData({
             name: data.name || '',
             address: data.address || '',
@@ -57,6 +61,37 @@ export default function SettingsPage() {
     }
     fetchCompany()
   }, [])
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload-logo', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Erreur lors de l\'upload')
+      }
+
+      const { url } = await response.json()
+      setLogoUrl(url)
+      setSuccess(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'upload')
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -230,11 +265,11 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Logo Upload (placeholder for now) */}
+        {/* Logo Upload */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Upload className="h-5 w-5 text-primary" />
+              <ImageIcon className="h-5 w-5 text-primary" />
               <CardTitle>Logo de la societe</CardTitle>
             </div>
             <CardDescription>
@@ -242,14 +277,53 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Vous pourrez bientot telecharger votre logo ici.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Pour l&apos;instant, contactez-nous pour ajouter votre logo.
-              </p>
+            <div className="space-y-4">
+              {logoUrl ? (
+                <div className="flex items-center gap-4">
+                  <div className="relative w-32 h-16 border rounded-lg overflow-hidden bg-white">
+                    <Image
+                      src={logoUrl}
+                      alt="Logo de la societe"
+                      fill
+                      className="object-contain p-2"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Logo actuel</p>
+                    <label className="cursor-pointer">
+                      <span className="text-sm text-primary hover:underline">
+                        {isUploading ? 'Chargement...' : 'Changer le logo'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={isUploading}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <label className="cursor-pointer block">
+                  <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors">
+                    <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      {isUploading ? 'Chargement en cours...' : 'Cliquez pour telecharger votre logo'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PNG, JPG ou SVG (max. 2MB)
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    disabled={isUploading}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
           </CardContent>
         </Card>
