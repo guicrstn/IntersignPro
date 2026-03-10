@@ -184,10 +184,11 @@ export function InterventionPDFDocument({ intervention, company }: InterventionP
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
-            {company?.logo_url && (
+            {company?.logo_url ? (
               <Image src={company.logo_url} style={styles.companyLogo} />
+            ) : (
+              <Text style={styles.companyName}>{company?.name || 'Ma Societe'}</Text>
             )}
-            <Text style={styles.companyName}>{company?.name || 'Ma Societe'}</Text>
             {company?.address && (
               <Text style={styles.companyDetail}>
                 {company.address}

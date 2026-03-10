@@ -27,10 +27,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import type { User } from '@supabase/supabase-js'
+import Image from 'next/image'
 
 interface DashboardHeaderProps {
   user: User
   companyName: string
+  logoUrl?: string | null
 }
 
 const navigation = [
@@ -40,7 +42,7 @@ const navigation = [
   { name: 'Parametres', href: '/dashboard/settings', icon: Settings },
 ]
 
-export function DashboardHeader({ user, companyName }: DashboardHeaderProps) {
+export function DashboardHeader({ user, companyName, logoUrl }: DashboardHeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -117,9 +119,20 @@ export function DashboardHeader({ user, companyName }: DashboardHeaderProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <UserIcon className="h-4 w-4" />
-            </div>
+            {logoUrl ? (
+              <div className="relative h-8 w-8 rounded-full overflow-hidden bg-white border">
+                <Image
+                  src={logoUrl}
+                  alt="Logo"
+                  fill
+                  className="object-contain p-0.5"
+                />
+              </div>
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <UserIcon className="h-4 w-4" />
+              </div>
+            )}
             <span className="hidden md:inline-block max-w-32 truncate">
               {user.email}
             </span>
