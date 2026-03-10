@@ -44,7 +44,7 @@ export default function SignUpPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -57,7 +57,20 @@ export default function SignUpPage() {
         },
       })
       if (error) throw error
-      router.push('/auth/sign-up-success')
+      
+      // Si l'utilisateur est confirme automatiquement (email confirm desactive)
+      // on le redirige directement vers le dashboard
+      if (data.session) {
+        // Creer la company pour l'utilisateur
+        await supabase.from('companies').insert({
+          user_id: data.user?.id,
+          name: companyName,
+        })
+        router.push('/dashboard')
+      } else {
+        // Sinon on affiche la page de confirmation
+        router.push('/auth/sign-up-success')
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Une erreur est survenue')
     } finally {
