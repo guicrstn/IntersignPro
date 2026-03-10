@@ -17,7 +17,7 @@ import {
   Smartphone,
   Shield
 } from 'lucide-react'
-import { PLANS } from '@/lib/products'
+import { PRODUCTS } from '@/lib/products'
 import { cn } from '@/lib/utils'
 
 export default async function HomePage() {
@@ -190,15 +190,15 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {PLANS.map((plan) => (
+              {PRODUCTS.map((product) => (
                 <Card 
-                  key={plan.id} 
+                  key={product.id} 
                   className={cn(
                     'relative flex flex-col',
-                    plan.popular && 'border-primary shadow-lg md:scale-105'
+                    product.popular && 'border-primary shadow-lg md:scale-105'
                   )}
                 >
-                  {plan.popular && (
+                  {product.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
                         Recommande
@@ -208,33 +208,27 @@ export default async function HomePage() {
                   <CardHeader className="text-center pb-4">
                     <div className={cn(
                       'mx-auto mb-4 p-3 rounded-full',
-                      plan.popular ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                      product.popular ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
                     )}>
-                      {getPlanIcon(plan.id)}
+                      {getPlanIcon(product.id)}
                     </div>
-                    <CardTitle className="text-xl">{plan.name}</CardTitle>
-                    <CardDescription>{plan.description}</CardDescription>
+                    <CardTitle className="text-xl">{product.name}</CardTitle>
+                    <CardDescription>{product.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1">
                     <div className="text-center mb-6">
                       <span className="text-4xl font-bold text-foreground">
-                        {(plan.priceInCents / 100).toFixed(0)}€
+                        {product.priceDisplay}
                       </span>
-                      {plan.type === 'recurring' ? (
-                        <span className="text-muted-foreground">
-                          /{plan.interval === 'month' ? 'mois' : 'an'}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground"> une fois</span>
-                      )}
+                      <span className="text-muted-foreground">{product.period}</span>
                     </div>
-                    {plan.type === 'recurring' && plan.trialDays && (
+                    {product.mode === 'subscription' && (
                       <p className="text-center text-sm text-accent font-medium mb-4">
-                        {plan.trialDays} jours d&apos;essai gratuit
+                        14 jours d&apos;essai gratuit
                       </p>
                     )}
                     <ul className="space-y-3">
-                      {plan.features.slice(0, 4).map((feature, index) => (
+                      {product.features.map((feature, index) => (
                         <li key={index} className="flex items-start gap-3">
                           <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                           <span className="text-sm text-foreground">{feature}</span>
@@ -244,12 +238,12 @@ export default async function HomePage() {
                   </CardContent>
                   <CardFooter>
                     <Button 
-                      variant={plan.popular ? 'default' : 'outline'}
+                      variant={product.popular ? 'default' : 'outline'}
                       className="w-full"
                       asChild
                     >
                       <Link href="/auth/sign-up">
-                        {plan.trialDays ? 'Essayer gratuitement' : 'Choisir'}
+                        {product.mode === 'subscription' ? 'Essayer gratuitement' : 'Choisir'}
                       </Link>
                     </Button>
                   </CardFooter>
