@@ -19,7 +19,9 @@ export function CheckoutButton({ planId, children, variant = 'default', classNam
   const handleCheckout = async () => {
     setIsLoading(true)
     try {
-      const { url } = await createCheckoutSession(planId)
+      // Passer l'URL de base actuelle pour la redirection Stripe
+      const baseUrl = window.location.origin
+      const { url } = await createCheckoutSession(planId, baseUrl)
       if (url) {
         window.location.href = url
       }

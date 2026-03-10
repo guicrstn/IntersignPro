@@ -43,7 +43,9 @@ export default function CheckoutPage() {
     setError(null)
     
     try {
-      const { url } = await createCheckoutSession(planId)
+      // Passer l'URL de base actuelle pour la redirection Stripe
+      const baseUrl = window.location.origin
+      const { url } = await createCheckoutSession(planId, baseUrl)
       if (url) {
         window.location.href = url
       }

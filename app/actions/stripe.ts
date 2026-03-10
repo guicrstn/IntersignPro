@@ -4,7 +4,21 @@ import { stripe } from '@/lib/stripe'
 import { PRODUCTS, type PlanId } from '@/lib/products'
 import { createClient } from '@/lib/supabase/server'
 
-export async function createCheckoutSession(planId: PlanId) {
+// Helper pour obtenir l'URL de base de l'application
+function getBaseUrl() {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  }
+  return 'http://localhost:3000'
+}
+
+export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -16,6 +30,9 @@ export async function createCheckoutSession(planId: PlanId) {
   if (!plan) {
     throw new Error('Plan invalide')
   }
+  
+  // Utiliser l'URL fournie par le client ou celle du serveur
+  const appUrl = baseUrl || getBaseUrl()
 
   // Verifier si l'utilisateur a deja utilise son essai gratuit
   const { data: company } = await supabase
@@ -65,8 +82,8 @@ export async function createCheckoutSession(planId: PlanId) {
       },
     ],
     mode: plan.mode === 'subscription' ? 'subscription' : 'payment',
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing`,
+    success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${appUrl}/pricing`,
     metadata: {
       user_id: user.id,
       plan_id: plan.id,
