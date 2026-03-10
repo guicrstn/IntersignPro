@@ -11,6 +11,9 @@ export interface Product {
   interval?: 'month' | 'year'
 }
 
+// Type pour les IDs de plan
+export type PlanId = 'monthly' | 'annual' | 'lifetime'
+
 export const PRODUCTS: Product[] = [
   {
     id: 'monthly',
@@ -67,3 +70,11 @@ export const PRODUCTS: Product[] = [
     mode: 'payment',
   },
 ]
+
+// Alias pour compatibilite avec les actions Stripe
+export const PLANS = PRODUCTS
+
+// Helper pour obtenir un plan par ID
+export function getPlanById(id: PlanId): Product | undefined {
+  return PRODUCTS.find(p => p.id === id)
+}

@@ -242,7 +242,7 @@ export default async function HomePage() {
                       className="w-full"
                       asChild
                     >
-                      <Link href="/auth/sign-up">
+                      <Link href={`/auth/sign-up?plan=${product.id}`}>
                         {product.mode === 'subscription' ? 'Essayer gratuitement' : 'Choisir'}
                       </Link>
                     </Button>

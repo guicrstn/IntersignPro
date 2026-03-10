@@ -1,7 +1,7 @@
 'use server'
 
 import { stripe } from '@/lib/stripe'
-import { PLANS, type PlanId } from '@/lib/products'
+import { PRODUCTS, type PlanId } from '@/lib/products'
 import { createClient } from '@/lib/supabase/server'
 
 export async function createCheckoutSession(planId: PlanId) {
@@ -12,7 +12,7 @@ export async function createCheckoutSession(planId: PlanId) {
     throw new Error('Vous devez etre connecte pour souscrire a un abonnement')
   }
 
-  const plan = PLANS.find(p => p.id === planId)
+  const plan = PRODUCTS.find(p => p.id === planId)
   if (!plan) {
     throw new Error('Plan invalide')
   }
@@ -55,7 +55,7 @@ export async function createCheckoutSession(planId: PlanId) {
             description: plan.description,
           },
           unit_amount: plan.priceInCents,
-          ...(plan.type === 'recurring' && {
+          ...(plan.mode === 'subscription' && plan.interval && {
             recurring: {
               interval: plan.interval,
             },
@@ -64,7 +64,7 @@ export async function createCheckoutSession(planId: PlanId) {
         quantity: 1,
       },
     ],
-    mode: plan.type === 'recurring' ? 'subscription' : 'payment',
+    mode: plan.mode === 'subscription' ? 'subscription' : 'payment',
     success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing`,
     metadata: {
@@ -73,10 +73,10 @@ export async function createCheckoutSession(planId: PlanId) {
     },
   }
 
-  // Ajouter l'essai gratuit si pas encore utilise et si c'est un abonnement mensuel ou annuel
-  if (!company?.trial_used && plan.type === 'recurring' && plan.trialDays) {
+  // Ajouter l'essai gratuit de 14 jours si pas encore utilise et si c'est un abonnement
+  if (!company?.trial_used && plan.mode === 'subscription') {
     sessionParams.subscription_data = {
-      trial_period_days: plan.trialDays,
+      trial_period_days: 14,
       metadata: {
         user_id: user.id,
         plan_id: plan.id,

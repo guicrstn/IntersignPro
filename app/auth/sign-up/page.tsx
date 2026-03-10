@@ -12,11 +12,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { FileSignature } from 'lucide-react'
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams()
+  const planId = searchParams.get('plan')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
@@ -59,17 +61,24 @@ export default function SignUpPage() {
       if (error) throw error
       
       // Si l'utilisateur est confirme automatiquement (email confirm desactive)
-      // on le redirige directement vers le dashboard
+      // on le redirige vers le checkout si un plan a ete selectionne
       if (data.session) {
         // Creer la company pour l'utilisateur
         await supabase.from('companies').insert({
           user_id: data.user?.id,
           name: companyName,
         })
-        router.push('/dashboard')
+        
+        // Rediriger vers le checkout si un plan a ete selectionne, sinon vers le dashboard
+        if (planId) {
+          router.push(`/checkout?plan=${planId}`)
+        } else {
+          router.push('/pricing')
+        }
       } else {
-        // Sinon on affiche la page de confirmation
-        router.push('/auth/sign-up-success')
+        // Sinon on affiche la page de confirmation avec le plan en parametre
+        const successUrl = planId ? `/auth/sign-up-success?plan=${planId}` : '/auth/sign-up-success'
+        router.push(successUrl)
       }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Une erreur est survenue')

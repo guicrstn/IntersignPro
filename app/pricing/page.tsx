@@ -5,14 +5,14 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check, ArrowLeft, Zap, Star, Crown } from 'lucide-react'
-import { PLANS } from '@/lib/products'
+import { PRODUCTS } from '@/lib/products'
 import { CheckoutButton } from '@/components/checkout-button'
 import { cn } from '@/lib/utils'
 
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual')
 
-  const displayedPlans = PLANS.filter(plan => {
+  const displayedPlans = PRODUCTS.filter(plan => {
     if (plan.id === 'lifetime') return true
     if (billingCycle === 'monthly') return plan.id === 'monthly'
     return plan.id === 'annual'
@@ -115,20 +115,14 @@ export default function PricingPage() {
               <CardContent className="flex-1">
                 <div className="text-center mb-6">
                   <span className="text-4xl font-bold text-foreground">
-                    {(plan.priceInCents / 100).toFixed(0)}€
+                    {plan.priceDisplay}
                   </span>
-                  {plan.type === 'recurring' ? (
-                    <span className="text-muted-foreground">
-                      /{plan.interval === 'month' ? 'mois' : 'an'}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground"> une seule fois</span>
-                  )}
+                  <span className="text-muted-foreground">{plan.period}</span>
                 </div>
 
-                {plan.type === 'recurring' && plan.trialDays && (
+                {plan.mode === 'subscription' && (
                   <p className="text-center text-sm text-accent font-medium mb-6">
-                    {plan.trialDays} jours d&apos;essai gratuit
+                    14 jours d&apos;essai gratuit
                   </p>
                 )}
 
@@ -143,11 +137,11 @@ export default function PricingPage() {
               </CardContent>
               <CardFooter>
                 <CheckoutButton 
-                  planId={plan.id}
+                  planId={plan.id as 'monthly' | 'annual' | 'lifetime'}
                   variant={plan.popular ? 'default' : 'outline'}
                   className="w-full"
                 >
-                  {plan.type === 'recurring' && plan.trialDays 
+                  {plan.mode === 'subscription' 
                     ? 'Commencer l\'essai gratuit' 
                     : 'Souscrire maintenant'}
                 </CheckoutButton>
