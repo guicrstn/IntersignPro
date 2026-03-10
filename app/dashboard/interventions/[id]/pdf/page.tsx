@@ -126,7 +126,7 @@ export default function PDFPage({
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {PDFReady && PDFComponents ? (
               <PDFComponents.PDFDownloadLink
                 document={<PDFComponents.InterventionPDFDocument intervention={intervention} company={company} />}

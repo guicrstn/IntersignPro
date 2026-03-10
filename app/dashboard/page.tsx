@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Users, ClipboardList, Clock, CheckCircle, PlusCircle, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import type { Client, Intervention } from '@/lib/types'
+import { ActivityChart } from '@/components/activity-chart'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -31,6 +32,17 @@ export default async function DashboardPage() {
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user!.id)
     .eq('status', 'signed')
+
+  // Get all interventions for the chart (last 12 months)
+  const twelveMonthsAgo = new Date()
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
+  
+  const { data: allInterventions } = await supabase
+    .from('interventions')
+    .select('id, date, status, intervention_number')
+    .eq('user_id', user!.id)
+    .gte('date', twelveMonthsAgo.toISOString().split('T')[0])
+    .order('date', { ascending: false })
 
   // Get recent interventions
   const { data: recentInterventions } = await supabase
@@ -96,6 +108,9 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {/* Activity Chart */}
+      <ActivityChart interventions={allInterventions || []} />
+
       {/* Recent Activity */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Interventions */}
@@ -111,7 +126,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {recentInterventions && recentInterventions.length > 0 ? (
-              <ul className="space-y-3">
+              <ul className="flex flex-col gap-3">
                 {recentInterventions.map((intervention: Intervention & { client: Client }) => (
                   <li key={intervention.id}>
                     <Link 
@@ -160,7 +175,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {recentClients && recentClients.length > 0 ? (
-              <ul className="space-y-3">
+              <ul className="flex flex-col gap-3">
                 {recentClients.map((client: Client) => (
                   <li key={client.id}>
                     <Link 

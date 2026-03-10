@@ -33,10 +33,10 @@ export default async function InterventionsPage() {
 
       {/* Interventions List */}
       {interventions && interventions.length > 0 ? (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-4">
           {interventions.map((intervention: InterventionWithClient) => (
             <Link key={intervention.id} href={`/dashboard/interventions/${intervention.id}`}>
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+              <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-4 min-w-0 flex-1">
                     <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
