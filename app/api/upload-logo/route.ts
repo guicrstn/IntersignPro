@@ -42,13 +42,13 @@ export async function POST(request: NextRequest) {
 
     // Upload du nouveau logo
     const blob = await put(`logos/${user.id}/${file.name}`, file, {
-      access: 'public',
+      access: 'private',
     })
 
-    // Mettre a jour la company avec le nouveau logo
+    // Mettre a jour la company avec le pathname du logo
     const { error } = await supabase
       .from('companies')
-      .update({ logo_url: blob.url })
+      .update({ logo_url: blob.pathname })
       .eq('user_id', user.id)
 
     if (error) {
@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    return NextResponse.json({ url: blob.url })
+    // Retourner l'URL de l'API pour servir le logo
+    return NextResponse.json({ url: `/api/logo?pathname=${encodeURIComponent(blob.pathname)}` })
   } catch (error) {
     console.error('Erreur upload:', error)
     return NextResponse.json({ error: 'Echec de l\'upload' }, { status: 500 })

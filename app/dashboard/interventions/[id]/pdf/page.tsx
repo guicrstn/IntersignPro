@@ -45,6 +45,13 @@ export default function PDFPage({
           .single()
 
         setIntervention(interventionData)
+        // Construire l'URL complete du logo pour le PDF
+        if (companyData?.logo_url) {
+          const logoUrl = `/api/logo?pathname=${encodeURIComponent(companyData.logo_url)}`
+          // Pour react-pdf, on a besoin d'une URL absolue
+          const baseUrl = window.location.origin
+          companyData.logo_url = `${baseUrl}${logoUrl}`
+        }
         setCompany(companyData)
       }
       setIsFetching(false)

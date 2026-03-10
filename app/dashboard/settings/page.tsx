@@ -45,7 +45,8 @@ export default function SettingsPage() {
 
         if (data) {
           setCompany(data)
-          setLogoUrl(data.logo_url || null)
+          // Le logo_url stocke le pathname, on construit l'URL de l'API
+          setLogoUrl(data.logo_url ? `/api/logo?pathname=${encodeURIComponent(data.logo_url)}` : null)
           setFormData({
             name: data.name || '',
             address: data.address || '',
