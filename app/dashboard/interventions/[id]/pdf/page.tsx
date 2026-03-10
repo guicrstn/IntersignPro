@@ -7,18 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, Download, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import type { InterventionWithClient, Company } from '@/lib/types'
-
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
-  { ssr: false }
-)
-
-const InterventionPDFDocument = dynamic(
-  () => import('@/components/intervention-pdf-document').then((mod) => mod.InterventionPDFDocument),
-  { ssr: false }
-)
 
 export default function PDFPage({
   params,
@@ -30,6 +19,11 @@ export default function PDFPage({
   const [isFetching, setIsFetching] = useState(true)
   const [intervention, setIntervention] = useState<InterventionWithClient | null>(null)
   const [company, setCompany] = useState<Company | null>(null)
+  const [PDFReady, setPDFReady] = useState(false)
+  const [PDFComponents, setPDFComponents] = useState<{
+    PDFDownloadLink: React.ComponentType<any>
+    InterventionPDFDocument: React.ComponentType<any>
+  } | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +51,22 @@ export default function PDFPage({
     }
     fetchData()
   }, [id])
+
+  useEffect(() => {
+    // Load PDF components dynamically on client side only
+    const loadPDFComponents = async () => {
+      const [reactPdf, pdfDoc] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/components/intervention-pdf-document')
+      ])
+      setPDFComponents({
+        PDFDownloadLink: reactPdf.PDFDownloadLink,
+        InterventionPDFDocument: pdfDoc.InterventionPDFDocument
+      })
+      setPDFReady(true)
+    }
+    loadPDFComponents()
+  }, [])
 
   if (isFetching) {
     return (
@@ -110,26 +120,33 @@ export default function PDFPage({
           </div>
 
           <div className="space-y-4">
-            <PDFDownloadLink
-              document={<InterventionPDFDocument intervention={intervention} company={company} />}
-              fileName={`${intervention.intervention_number}.pdf`}
-            >
-              {({ loading }) => (
-                <Button size="lg" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generation...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="mr-2 h-4 w-4" />
-                      Telecharger le PDF
-                    </>
-                  )}
-                </Button>
-              )}
-            </PDFDownloadLink>
+            {PDFReady && PDFComponents ? (
+              <PDFComponents.PDFDownloadLink
+                document={<PDFComponents.InterventionPDFDocument intervention={intervention} company={company} />}
+                fileName={`${intervention.intervention_number}.pdf`}
+              >
+                {({ loading }: { loading: boolean }) => (
+                  <Button size="lg" className="w-full" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generation...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="mr-2 h-4 w-4" />
+                        Telecharger le PDF
+                      </>
+                    )}
+                  </Button>
+                )}
+              </PDFComponents.PDFDownloadLink>
+            ) : (
+              <Button size="lg" className="w-full" disabled>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Chargement...
+              </Button>
+            )}
 
             <Button asChild variant="outline" className="w-full">
               <Link href={`/dashboard/interventions/${id}`}>
