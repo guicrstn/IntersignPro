@@ -166,6 +166,7 @@ export default function LicenseOptionsPage() {
                 >
                   <Checkbox
                     checked={isSelected}
+                    onClick={(e) => e.stopPropagation()}
                     onCheckedChange={() => toggleOption(option.key)}
                   />
                   <div className="flex-1">

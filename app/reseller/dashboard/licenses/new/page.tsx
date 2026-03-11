@@ -264,20 +264,22 @@ export default function NewLicensePage() {
                     selectedPlan === 'annual' ? option.priceAnnual : option.priceLifetime
                   const period = selectedPlan === 'monthly' ? '/mois' :
                     selectedPlan === 'annual' ? '/an' : ''
+                  const isSelected = selectedOptions.includes(option.key)
 
                   return (
                     <div 
                       key={option.key}
                       className={cn(
                         'flex items-start gap-4 p-4 border rounded-lg cursor-pointer transition-colors',
-                        selectedOptions.includes(option.key)
+                        isSelected
                           ? 'border-primary bg-primary/5'
                           : 'hover:border-primary/50'
                       )}
                       onClick={() => toggleOption(option.key)}
                     >
                       <Checkbox
-                        checked={selectedOptions.includes(option.key)}
+                        checked={isSelected}
+                        onClick={(e) => e.stopPropagation()}
                         onCheckedChange={() => toggleOption(option.key)}
                       />
                       <div className="flex-1">
