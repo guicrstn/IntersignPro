@@ -11,6 +11,7 @@ import {
   Settings,
   PlusCircle,
   CreditCard,
+  Key,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { User } from '@supabase/supabase-js'
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
   { name: 'Interventions', href: '/dashboard/interventions', icon: ClipboardList },
   { name: 'Abonnement', href: '/dashboard/subscription', icon: CreditCard },
+  { name: 'Cles API', href: '/dashboard/api-keys', icon: Key },
   { name: 'Parametres', href: '/dashboard/settings', icon: Settings },
 ]
 

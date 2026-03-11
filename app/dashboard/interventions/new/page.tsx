@@ -17,6 +17,7 @@ import {
 import { ArrowLeft, Save, Users, PlusCircle } from 'lucide-react'
 import Link from 'next/link'
 import type { Client } from '@/lib/types'
+import { QuoteImport, type QuoteLine } from '@/components/quote-import'
 
 export default function NewInterventionPage() {
   const router = useRouter()
@@ -32,13 +33,16 @@ export default function NewInterventionPage() {
     client_id: preselectedClientId || '',
     description: '',
   })
+  const [quoteLines, setQuoteLines] = useState<QuoteLine[]>([])
+  const [hasQuoteOption, setHasQuoteOption] = useState(false)
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
+        // Fetch clients
         const { data } = await supabase
           .from('clients')
           .select('*')
@@ -46,10 +50,32 @@ export default function NewInterventionPage() {
           .order('name', { ascending: true })
 
         setClients(data || [])
+
+        // Check if user has quote_import option
+        const { data: company } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('user_id', user.id)
+          .single()
+
+        if (company) {
+          const { data: license } = await supabase
+            .from('licenses')
+            .select('id, license_options(option_key)')
+            .eq('company_id', company.id)
+            .single()
+
+          if (license?.license_options) {
+            const hasOption = license.license_options.some(
+              (opt: { option_key: string }) => opt.option_key === 'quote_import'
+            )
+            setHasQuoteOption(hasOption)
+          }
+        }
       }
       setIsFetching(false)
     }
-    fetchClients()
+    fetchData()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,6 +114,8 @@ export default function NewInterventionPage() {
         description: formData.description,
         date: new Date().toISOString().split('T')[0],
         status: 'draft',
+        quote_lines: quoteLines.length > 0 ? quoteLines : null,
+        quote_imported_at: quoteLines.length > 0 ? new Date().toISOString() : null,
       })
       .select()
       .single()
@@ -185,6 +213,27 @@ export default function NewInterventionPage() {
                     Soyez precis et detaille pour une meilleure tracabilite.
                   </p>
                 </div>
+
+                {/* Quote import section */}
+                {hasQuoteOption && (
+                  <div className="grid gap-2">
+                    <Label>Import de devis (optionnel)</Label>
+                    <div className="flex items-center gap-4">
+                      <QuoteImport 
+                        onImport={setQuoteLines}
+                        existingLines={quoteLines}
+                      />
+                      {quoteLines.length > 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          {quoteLines.length} ligne{quoteLines.length > 1 ? 's' : ''} importee{quoteLines.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Importez un devis PDF pour extraire automatiquement les lignes et les faire signer.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {error && (
