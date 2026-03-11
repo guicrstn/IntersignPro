@@ -6,17 +6,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { 
   CreditCard, 
   Calendar, 
   AlertTriangle, 
   Check,
   ArrowRight,
-  Zap,
   Crown,
-  Clock
+  Clock,
+  X
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { 
   getSubscriptionStatus, 
   createBillingPortalSession,
@@ -41,6 +48,13 @@ export default function SubscriptionPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  
+  // Modal states
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [modalMessage, setModalMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     async function fetchSubscription() {
@@ -64,25 +78,36 @@ export default function SubscriptionPage() {
         window.location.href = url
       }
     } catch (error) {
-      console.error('Erreur:', error)
-      alert('Impossible d\'acceder au portail de facturation')
+      setModalMessage('Impossible d\'acceder au portail de facturation. Veuillez reessayer plus tard.')
+      setShowErrorModal(true)
     } finally {
       setActionLoading(null)
     }
   }
 
   const handleCancel = async () => {
-    if (!confirm('Etes-vous sur de vouloir annuler votre abonnement ? Vous conserverez l\'acces jusqu\'a la fin de la periode en cours.')) {
-      return
-    }
+    setShowCancelModal(false)
     setActionLoading('cancel')
     try {
+      // Verifier si on peut annuler
+      if (!subscription?.stripe_subscription_id) {
+        setModalMessage('Votre abonnement est en periode d\'essai. Vous pouvez simplement arreter d\'utiliser le service, il sera automatiquement desactive a la fin de la periode d\'essai.')
+        setShowErrorModal(true)
+        return
+      }
+      
       await cancelSubscription()
       const data = await getSubscriptionStatus()
       setSubscription(data)
+      setSuccessMessage('Votre abonnement a ete annule. Vous conservez l\'acces jusqu\'a la fin de la periode en cours.')
+      setShowSuccessModal(true)
     } catch (error) {
-      console.error('Erreur:', error)
-      alert('Erreur lors de l\'annulation')
+      if (error instanceof Error && error.message.includes('Aucun abonnement actif')) {
+        setModalMessage('Votre essai gratuit sera automatiquement desactive a la fin de la periode. Aucune action necessaire.')
+      } else {
+        setModalMessage('Une erreur est survenue lors de l\'annulation. Veuillez reessayer.')
+      }
+      setShowErrorModal(true)
     } finally {
       setActionLoading(null)
     }
@@ -94,9 +119,11 @@ export default function SubscriptionPage() {
       await reactivateSubscription()
       const data = await getSubscriptionStatus()
       setSubscription(data)
+      setSuccessMessage('Votre abonnement a ete reactive avec succes.')
+      setShowSuccessModal(true)
     } catch (error) {
-      console.error('Erreur:', error)
-      alert('Erreur lors de la reactivation')
+      setModalMessage('Impossible de reactiver l\'abonnement. Veuillez nous contacter.')
+      setShowErrorModal(true)
     } finally {
       setActionLoading(null)
     }
@@ -111,8 +138,8 @@ export default function SubscriptionPage() {
         window.location.href = url
       }
     } catch (error) {
-      console.error('Erreur:', error)
-      alert('Erreur lors du changement de plan')
+      setModalMessage('Erreur lors du changement de plan. Veuillez reessayer.')
+      setShowErrorModal(true)
     } finally {
       setActionLoading(null)
     }
@@ -153,6 +180,10 @@ export default function SubscriptionPage() {
   const hasActiveSubscription = subscription?.subscription_status === 'active' || 
                                  subscription?.subscription_status === 'trial' ||
                                  subscription?.subscription_status === 'canceled'
+
+  const canCancel = hasActiveSubscription && 
+                    subscription?.subscription_plan !== 'lifetime' &&
+                    subscription?.subscription_status !== 'canceled'
 
   return (
     <div className="space-y-6">
@@ -232,10 +263,10 @@ export default function SubscriptionPage() {
               {actionLoading === 'reactivate' ? <Spinner className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
               Reactiver l&apos;abonnement
             </Button>
-          ) : hasActiveSubscription && subscription?.subscription_plan !== 'lifetime' && (
+          ) : canCancel && (
             <Button 
               variant="destructive" 
-              onClick={handleCancel}
+              onClick={() => setShowCancelModal(true)}
               disabled={actionLoading === 'cancel'}
             >
               {actionLoading === 'cancel' && <Spinner className="mr-2 h-4 w-4" />}
@@ -330,6 +361,88 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Cancel Confirmation Modal */}
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Annuler l&apos;abonnement
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Etes-vous sur de vouloir annuler votre abonnement ?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <p className="text-sm">En annulant, vous :</p>
+              <ul className="text-sm space-y-1 text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                  <span>Conserverez l&apos;acces jusqu&apos;a la fin de la periode en cours</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <X className="h-4 w-4 text-destructive mt-0.5" />
+                  <span>Perdrez l&apos;acces a toutes les fonctionnalites apres cette date</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                  <span>Pourrez reactiver a tout moment</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowCancelModal(false)}>
+              Garder mon abonnement
+            </Button>
+            <Button variant="destructive" onClick={handleCancel}>
+              Confirmer l&apos;annulation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Modal */}
+      <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Information
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">{modalMessage}</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowErrorModal(false)}>
+              Compris
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <Check className="h-5 w-5" />
+              Succes
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">{successMessage}</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowSuccessModal(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
