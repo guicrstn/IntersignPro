@@ -38,7 +38,49 @@ export async function POST(request: Request) {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.user_id
         const planId = session.metadata?.plan_id
+        const licenseId = session.metadata?.license_id
+        const resellerId = session.metadata?.reseller_id
 
+        // Handle reseller license payment
+        if (licenseId && resellerId) {
+          // Get license details
+          const { data: license } = await supabaseAdmin
+            .from('licenses')
+            .select('plan')
+            .eq('id', licenseId)
+            .single()
+
+          if (license) {
+            // Calculate expiration date
+            let expiresAt: string | null = null
+            if (license.plan === 'monthly') {
+              expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            } else if (license.plan === 'annual') {
+              expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+            }
+
+            // Activate the license
+            await supabaseAdmin
+              .from('licenses')
+              .update({
+                status: 'active',
+                activated_at: new Date().toISOString(),
+                expires_at: expiresAt,
+                paid_at: new Date().toISOString(),
+                payment_amount: session.amount_total,
+              })
+              .eq('id', licenseId)
+
+            // Update reseller stats (increment total sales)
+            await supabaseAdmin.rpc('increment_reseller_sales', {
+              p_reseller_id: resellerId,
+              p_amount: session.amount_total || 0,
+            })
+          }
+          break
+        }
+
+        // Handle direct user payment
         if (userId && planId) {
           // Determiner le statut et la date de fin
           let subscriptionStatus = 'active'

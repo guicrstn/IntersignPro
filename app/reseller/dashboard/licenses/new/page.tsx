@@ -100,7 +100,7 @@ export default function NewLicensePage() {
       // Generate license key
       const licenseKey = generateLicenseKey()
 
-      // Create license
+      // Create license (status pending until payment)
       const { data: license, error: licenseError } = await supabase
         .from('licenses')
         .insert({
@@ -109,17 +109,14 @@ export default function NewLicensePage() {
           client_name: formData.clientName,
           client_email: formData.clientEmail,
           plan: selectedPlan,
-          status: 'active',
-          activated_at: new Date().toISOString(),
-          expires_at: selectedPlan === 'lifetime' ? null : 
-            selectedPlan === 'annual' 
-              ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'pending',
         })
         .select()
         .single()
 
-      if (licenseError) throw licenseError
+      if (licenseError) {
+        throw new Error(licenseError.message)
+      }
 
       // Add options if selected
       if (selectedOptions.length > 0 && license) {

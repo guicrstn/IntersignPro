@@ -19,6 +19,9 @@ import {
   Settings,
   Pause,
   Play,
+  Link2,
+  ExternalLink,
+  CreditCard,
 } from 'lucide-react'
 import type { License, LicenseOption } from '@/lib/types'
 import { AVAILABLE_OPTIONS } from '@/lib/types'
@@ -29,6 +32,8 @@ export default function LicenseDetailPage() {
   const [options, setOptions] = useState<LicenseOption[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [generatingLink, setGeneratingLink] = useState(false)
 
   useEffect(() => {
     const fetchLicense = async () => {
@@ -80,6 +85,43 @@ export default function LicenseDetailPage() {
 
     if (!error) {
       setLicense({ ...license, status: newStatus })
+    }
+  }
+
+  const generatePaymentLink = async () => {
+    if (!license) return
+    setGeneratingLink(true)
+
+    try {
+      const response = await fetch('/api/reseller/payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licenseId: license.id }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) throw new Error(data.error)
+
+      // Update license with payment link
+      setLicense({ ...license, stripe_payment_link: data.url } as License & { stripe_payment_link: string })
+      
+      // Copy link to clipboard
+      navigator.clipboard.writeText(data.url)
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 3000)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erreur lors de la generation')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  const copyPaymentLink = () => {
+    if (license && (license as License & { stripe_payment_link?: string }).stripe_payment_link) {
+      navigator.clipboard.writeText((license as License & { stripe_payment_link?: string }).stripe_payment_link!)
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 2000)
     }
   }
 
@@ -288,6 +330,73 @@ export default function LicenseDetailPage() {
                     {new Date(license.expires_at).toLocaleDateString('fr-FR')}
                   </span>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Lien de paiement
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(license as License & { stripe_payment_link?: string }).stripe_payment_link ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Envoyez ce lien a votre client pour qu&apos;il puisse payer et activer sa licence.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={copyPaymentLink}
+                    >
+                      {copiedLink ? (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Copie !
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copier
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      asChild
+                    >
+                      <a href={(license as License & { stripe_payment_link?: string }).stripe_payment_link!} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Generez un lien de paiement Stripe pour ce client. Le paiement sera attribue a votre compte revendeur.
+                  </p>
+                  <Button 
+                    className="w-full" 
+                    onClick={generatePaymentLink}
+                    disabled={generatingLink}
+                  >
+                    {generatingLink ? (
+                      'Generation...'
+                    ) : (
+                      <>
+                        <Link2 className="h-4 w-4 mr-2" />
+                        Generer le lien
+                      </>
+                    )}
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>
