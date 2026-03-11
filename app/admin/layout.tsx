@@ -26,7 +26,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // La page setup ne necessite pas d'etre admin
+  const isSetupPage = pathname === '/admin/setup'
+
   useEffect(() => {
+    // Skip admin check for setup page
+    if (isSetupPage) {
+      setIsAdmin(true) // Allow access to render the page
+      return
+    }
+
     const checkAdmin = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -50,7 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setIsAdmin(true)
     }
     checkAdmin()
-  }, [router])
+  }, [router, isSetupPage, pathname])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -64,6 +73,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
+  }
+
+  // Page setup sans sidebar
+  if (isSetupPage) {
+    return <div className="min-h-screen bg-background">{children}</div>
   }
 
   return (
