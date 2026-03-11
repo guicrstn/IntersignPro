@@ -116,9 +116,101 @@ export async function getSubscriptionStatus() {
 
   const { data: company } = await supabase
     .from('companies')
-    .select('subscription_status, subscription_plan, trial_used, subscription_end_date')
+    .select('subscription_status, subscription_plan, trial_used, subscription_end_date, stripe_customer_id, stripe_subscription_id')
     .eq('user_id', user.id)
     .single()
 
   return company
+}
+
+export async function createBillingPortalSession(baseUrl?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Vous devez etre connecte')
+  }
+
+  const { data: company } = await supabase
+    .from('companies')
+    .select('stripe_customer_id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!company?.stripe_customer_id) {
+    throw new Error('Aucun abonnement trouve')
+  }
+
+  const appUrl = baseUrl || getBaseUrl()
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: company.stripe_customer_id,
+    return_url: `${appUrl}/dashboard/subscription`,
+  })
+
+  return { url: session.url }
+}
+
+export async function cancelSubscription() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Vous devez etre connecte')
+  }
+
+  const { data: company } = await supabase
+    .from('companies')
+    .select('stripe_subscription_id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!company?.stripe_subscription_id) {
+    throw new Error('Aucun abonnement actif')
+  }
+
+  // Annuler a la fin de la periode en cours
+  await stripe.subscriptions.update(company.stripe_subscription_id, {
+    cancel_at_period_end: true,
+  })
+
+  // Mettre a jour le statut dans la base
+  await supabase
+    .from('companies')
+    .update({ subscription_status: 'canceled' })
+    .eq('user_id', user.id)
+
+  return { success: true }
+}
+
+export async function reactivateSubscription() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Vous devez etre connecte')
+  }
+
+  const { data: company } = await supabase
+    .from('companies')
+    .select('stripe_subscription_id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!company?.stripe_subscription_id) {
+    throw new Error('Aucun abonnement trouve')
+  }
+
+  // Reactiver l'abonnement
+  await stripe.subscriptions.update(company.stripe_subscription_id, {
+    cancel_at_period_end: false,
+  })
+
+  // Mettre a jour le statut dans la base
+  await supabase
+    .from('companies')
+    .update({ subscription_status: 'active' })
+    .eq('user_id', user.id)
+
+  return { success: true }
 }

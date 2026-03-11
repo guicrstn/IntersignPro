@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Settings,
   PlusCircle,
+  CreditCard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { User } from '@supabase/supabase-js'
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
   { name: 'Interventions', href: '/dashboard/interventions', icon: ClipboardList },
+  { name: 'Abonnement', href: '/dashboard/subscription', icon: CreditCard },
   { name: 'Parametres', href: '/dashboard/settings', icon: Settings },
 ]
 
