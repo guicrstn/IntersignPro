@@ -13,10 +13,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
-import { FileSignature } from 'lucide-react'
+import { useState, Suspense } from 'react'
+import { FileSignature, Loader2 } from 'lucide-react'
 
-export default function SignUpPage() {
+function SignUpForm() {
   const searchParams = useSearchParams()
   const planId = searchParams.get('plan')
   const [email, setEmail] = useState('')
@@ -172,5 +172,24 @@ export default function SignUpPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function SignUpFormFallback() {
+  return (
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-background">
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="text-muted-foreground">Chargement...</span>
+      </div>
+    </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<SignUpFormFallback />}>
+      <SignUpForm />
+    </Suspense>
   )
 }
