@@ -2,18 +2,29 @@
 
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Check, ArrowLeft, Zap, Star, Crown, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Check, ArrowLeft, Zap, Star, Crown, AlertCircle, LogOut, Home } from 'lucide-react'
 import { PRODUCTS } from '@/lib/products'
 import { CheckoutButton } from '@/components/checkout-button'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 function PricingContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const requiresSubscription = searchParams.get('requires_subscription') === 'true'
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual')
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   const displayedPlans = PRODUCTS.filter(plan => {
     if (plan.id === 'lifetime') return true
@@ -49,13 +60,31 @@ function PricingContent() {
       <main className="container mx-auto px-4 py-12 md:py-20">
         {/* Alert if subscription required */}
         {requiresSubscription && (
-          <Alert variant="destructive" className="max-w-2xl mx-auto mb-8">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Pour acceder au tableau de bord, veuillez choisir une formule d&apos;abonnement. 
-              Profitez de 14 jours d&apos;essai gratuit pour tester toutes les fonctionnalites.
-            </AlertDescription>
-          </Alert>
+          <div className="max-w-2xl mx-auto mb-8 space-y-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Pour acceder au tableau de bord, veuillez choisir une formule d&apos;abonnement. 
+                Profitez de 14 jours d&apos;essai gratuit pour tester toutes les fonctionnalites.
+              </AlertDescription>
+            </Alert>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button variant="outline" asChild>
+                <Link href="/">
+                  <Home className="h-4 w-4 mr-2" />
+                  Retourner sur le site
+                </Link>
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {isLoggingOut ? 'Deconnexion...' : 'Se deconnecter'}
+              </Button>
+            </div>
+          </div>
         )}
 
         {/* Title */}
