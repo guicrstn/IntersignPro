@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,7 +11,7 @@ import { PRODUCTS, type PlanId } from '@/lib/products'
 import { createCheckoutSession } from '@/app/actions/stripe'
 import { createClient } from '@/lib/supabase/client'
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const planId = searchParams.get('plan') as PlanId | null
@@ -174,5 +174,21 @@ export default function CheckoutPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+function CheckoutFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Spinner className="h-8 w-8" />
+    </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutFallback />}>
+      <CheckoutContent />
+    </Suspense>
   )
 }
