@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { createCheckoutSession } from '@/app/actions/stripe'
 import type { PlanId } from '@/lib/products'
@@ -15,6 +16,7 @@ interface CheckoutButtonProps {
 
 export function CheckoutButton({ planId, children, variant = 'default', className }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleCheckout = async () => {
     setIsLoading(true)
@@ -27,7 +29,15 @@ export function CheckoutButton({ planId, children, variant = 'default', classNam
       }
     } catch (error) {
       console.error('Erreur lors du checkout:', error)
-      alert(error instanceof Error ? error.message : 'Erreur lors du paiement')
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors du paiement'
+      
+      // Si l'utilisateur n'est pas connecte, rediriger vers la page de connexion
+      if (errorMessage.includes('connecte')) {
+        router.push(`/auth/login?redirect=/pricing&plan=${planId}`)
+        return
+      }
+      
+      alert(errorMessage)
     } finally {
       setIsLoading(false)
     }
