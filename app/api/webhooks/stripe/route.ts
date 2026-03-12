@@ -4,13 +4,16 @@ import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 import type Stripe from 'stripe'
 
-// Utiliser le client admin pour les webhooks (pas de session utilisateur)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Fonction pour creer le client admin (lazy initialization)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: Request) {
+  const supabaseAdmin = getSupabaseAdmin()
   const body = await request.text()
   const headersList = await headers()
   const signature = headersList.get('stripe-signature')
