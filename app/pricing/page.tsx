@@ -1,15 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Check, ArrowLeft, Zap, Star, Crown } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Check, ArrowLeft, Zap, Star, Crown, AlertCircle } from 'lucide-react'
 import { PRODUCTS } from '@/lib/products'
 import { CheckoutButton } from '@/components/checkout-button'
 import { cn } from '@/lib/utils'
 
-export default function PricingPage() {
+function PricingContent() {
+  const searchParams = useSearchParams()
+  const requiresSubscription = searchParams.get('requires_subscription') === 'true'
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual')
 
   const displayedPlans = PRODUCTS.filter(plan => {
@@ -44,6 +47,17 @@ export default function PricingPage() {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-20">
+        {/* Alert if subscription required */}
+        {requiresSubscription && (
+          <Alert variant="destructive" className="max-w-2xl mx-auto mb-8">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Pour acceder au tableau de bord, veuillez choisir une formule d&apos;abonnement. 
+              Profitez de 14 jours d&apos;essai gratuit pour tester toutes les fonctionnalites.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Title */}
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 text-balance">
@@ -155,11 +169,19 @@ export default function PricingPage() {
           <p className="text-muted-foreground text-sm">
             Paiement securise par Stripe. Annulation possible a tout moment.
           </p>
-          <p className="text-muted-foreground text-sm mt-2">
-            Besoin d&apos;aide ? <Link href="mailto:contact@intersign-pro.fr" className="text-primary hover:underline">Contactez-nous</Link>
-          </p>
-        </div>
-      </main>
-    </div>
+<p className="text-muted-foreground text-sm mt-2">
+          Besoin d&apos;aide ? <Link href="mailto:contact@intersign-pro.fr" className="text-primary hover:underline">Contactez-nous</Link>
+        </p>
+      </div>
+    </main>
+  </div>
+)
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Chargement...</div>}>
+      <PricingContent />
+    </Suspense>
   )
 }
