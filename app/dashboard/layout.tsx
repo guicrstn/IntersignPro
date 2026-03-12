@@ -3,13 +3,19 @@ import { redirect } from 'next/navigation'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { DashboardHeader } from '@/components/dashboard-header'
 
-// Fonction pour verifier si l'abonnement est valide
-function hasValidSubscription(company: {
+// Fonction pour verifier si l'utilisateur a acces au dashboard
+function hasAccess(company: {
   subscription_status?: string | null
   subscription_end_date?: string | null
   subscription_plan?: string | null
+  is_admin?: boolean | null
 } | null): boolean {
   if (!company) return false
+  
+  // Les administrateurs ont toujours acces (proprietaire de la solution)
+  if (company.is_admin === true) {
+    return true
+  }
   
   const status = company.subscription_status
   
@@ -66,8 +72,8 @@ export default async function DashboardLayout({
     company = newCompany
   }
 
-  // Verifier si l'utilisateur a un abonnement valide
-  if (!hasValidSubscription(company)) {
+  // Verifier si l'utilisateur a acces au dashboard (admin ou abonnement valide)
+  if (!hasAccess(company)) {
     redirect('/pricing?requires_subscription=true')
   }
 
