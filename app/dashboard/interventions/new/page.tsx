@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -14,12 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Save, Users, PlusCircle } from 'lucide-react'
+import { ArrowLeft, Save, Users, PlusCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import type { Client } from '@/lib/types'
 import { QuoteImport, type QuoteLine } from '@/components/quote-import'
 
-export default function NewInterventionPage() {
+function NewInterventionContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const preselectedClientId = searchParams.get('client')
@@ -254,5 +254,24 @@ export default function NewInterventionPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+function NewInterventionFallback() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="text-muted-foreground">Chargement...</span>
+      </div>
+    </div>
+  )
+}
+
+export default function NewInterventionPage() {
+  return (
+    <Suspense fallback={<NewInterventionFallback />}>
+      <NewInterventionContent />
+    </Suspense>
   )
 }

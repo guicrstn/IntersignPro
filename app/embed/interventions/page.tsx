@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,7 @@ interface Intervention {
   }
 }
 
-export default function EmbedInterventionsPage() {
+function EmbedInterventionsContent() {
   const searchParams = useSearchParams()
   const apiKey = searchParams.get('api_key')
   const [interventions, setInterventions] = useState<Intervention[]>([])
@@ -140,5 +140,21 @@ export default function EmbedInterventionsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function EmbedInterventionsFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <Spinner className="h-8 w-8" />
+    </div>
+  )
+}
+
+export default function EmbedInterventionsPage() {
+  return (
+    <Suspense fallback={<EmbedInterventionsFallback />}>
+      <EmbedInterventionsContent />
+    </Suspense>
   )
 }
