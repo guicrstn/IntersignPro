@@ -126,3 +126,31 @@ export interface ApiKey {
   last_used_at: string | null
   created_at: string
 }
+
+// Hour contracts types
+export interface HourContract {
+  id: string
+  user_id: string
+  client_id: string
+  name: string
+  total_hours: number
+  remaining_hours: number
+  status: 'active' | 'expired' | 'consumed'
+  notes: string | null
+  start_date: string
+  end_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface HourUsage {
+  id: string
+  user_id: string
+  contract_id: string
+  intervention_id: string | null
+  hours_used: number
+  travel_hours: number
+  description: string | null
+  usage_date: string
+  created_at: string
+}

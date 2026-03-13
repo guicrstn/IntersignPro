@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Phone, Mail, ClipboardList, PlusCircle, Pencil } fro
 import Link from 'next/link'
 import type { Intervention } from '@/lib/types'
 import { ClientDeleteButton } from '@/components/client-delete-button'
+import { HourContracts } from '@/components/hour-contracts'
 
 export default async function ClientDetailPage({
   params,
@@ -61,7 +62,7 @@ export default async function ClientDetailPage({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {/* Client Info */}
         <Card>
           <CardHeader>
@@ -154,6 +155,9 @@ export default async function ClientDetailPage({
             )}
           </CardContent>
         </Card>
+
+        {/* Hour Contracts */}
+        <HourContracts clientId={id} clientName={client.name} />
       </div>
     </div>
   )

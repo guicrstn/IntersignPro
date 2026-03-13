@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, MapPin, User, FileText, PenTool, Check, Download }
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Company } from '@/lib/types'
+import { HourDeductionButton } from '@/components/hour-deduction'
 
 export default async function InterventionDetailPage({
   params,
@@ -60,6 +61,15 @@ export default async function InterventionDetailPage({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
+          {/* Hour Deduction Button */}
+          {intervention.client_id && (
+            <HourDeductionButton
+              interventionId={id}
+              clientId={intervention.client_id}
+              interventionNumber={intervention.intervention_number}
+            />
+          )}
+          
           {intervention.status === 'draft' && (
             <Button asChild>
               <Link href={`/dashboard/interventions/${id}/sign`}>
