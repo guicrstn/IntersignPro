@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, MapPin, Phone, Mail, ClipboardList, PlusCircle, Pencil } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Mail, ClipboardList, PlusCircle, Pencil, User, Building2, FileText } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import type { Intervention } from '@/lib/types'
 import { ClientDeleteButton } from '@/components/client-delete-button'
@@ -47,7 +48,16 @@ export default async function ClientDetailPage({
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{client.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground">{client.name}</h1>
+              <Badge variant={client.client_type === 'professional' ? 'default' : 'secondary'}>
+                {client.client_type === 'professional' ? (
+                  <><Building2 className="h-3 w-3 mr-1" /> Professionnel</>
+                ) : (
+                  <><User className="h-3 w-3 mr-1" /> Particulier</>
+                )}
+              </Badge>
+            </div>
             <p className="text-muted-foreground">Fiche client</p>
           </div>
         </div>
@@ -97,6 +107,30 @@ export default async function ClientDetailPage({
                 <div>
                   <p className="font-medium">Email</p>
                   <p className="text-muted-foreground">{client.email}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Professional info - SIRET and TVA */}
+            {client.client_type === 'professional' && (client.siret || client.tva_number) && (
+              <div className="pt-4 border-t">
+                <p className="font-medium mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Informations professionnelles
+                </p>
+                <div className="space-y-2 text-sm">
+                  {client.siret && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">SIRET</span>
+                      <span className="font-mono">{client.siret}</span>
+                    </div>
+                  )}
+                  {client.tva_number && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">N° TVA</span>
+                      <span className="font-mono">{client.tva_number}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

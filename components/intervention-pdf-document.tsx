@@ -231,6 +231,13 @@ export function InterventionPDFDocument({ intervention, company }: InterventionP
             {intervention.client?.email && (
               <Text style={styles.clientDetail}>{intervention.client?.email}</Text>
             )}
+            {/* Professional client info */}
+            {intervention.client?.client_type === 'professional' && intervention.client?.siret && (
+              <Text style={styles.clientDetail}>SIRET: {intervention.client.siret}</Text>
+            )}
+            {intervention.client?.client_type === 'professional' && intervention.client?.tva_number && (
+              <Text style={styles.clientDetail}>N° TVA: {intervention.client.tva_number}</Text>
+            )}
           </View>
         </View>
 
