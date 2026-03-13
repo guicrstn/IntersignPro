@@ -30,6 +30,9 @@ export interface Client {
   city: string | null
   postal_code: string | null
   notes: string | null
+  client_type: 'particular' | 'professional'
+  siret: string | null
+  tva_number: string | null
   created_at: string
   updated_at: string
 }

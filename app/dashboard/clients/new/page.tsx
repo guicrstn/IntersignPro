@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Save } from 'lucide-react'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { ArrowLeft, Save, User, Building2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function NewClientPage() {
@@ -24,6 +25,9 @@ export default function NewClientPage() {
     postal_code: '',
     city: '',
     notes: '',
+    client_type: 'particular' as 'particular' | 'professional',
+    siret: '',
+    tva_number: '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -55,6 +59,9 @@ export default function NewClientPage() {
         postal_code: formData.postal_code || null,
         city: formData.city || null,
         notes: formData.notes || null,
+        client_type: formData.client_type,
+        siret: formData.client_type === 'professional' ? (formData.siret || null) : null,
+        tva_number: formData.client_type === 'professional' ? (formData.tva_number || null) : null,
       })
 
     if (insertError) {
@@ -92,6 +99,33 @@ export default function NewClientPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid gap-4">
+              {/* Client Type Selection */}
+              <div className="grid gap-3">
+                <Label>Type de client *</Label>
+                <RadioGroup
+                  value={formData.client_type}
+                  onValueChange={(value: 'particular' | 'professional') => 
+                    setFormData(prev => ({ ...prev, client_type: value }))
+                  }
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="particular" id="particular" />
+                    <Label htmlFor="particular" className="flex items-center gap-2 cursor-pointer font-normal">
+                      <User className="h-4 w-4" />
+                      Particulier
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="professional" id="professional" />
+                    <Label htmlFor="professional" className="flex items-center gap-2 cursor-pointer font-normal">
+                      <Building2 className="h-4 w-4" />
+                      Professionnel
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="name">Nom / Raison sociale *</Label>
                 <Input
@@ -103,6 +137,33 @@ export default function NewClientPage() {
                   required
                 />
               </div>
+
+              {/* Professional fields - only shown for professionals */}
+              {formData.client_type === 'professional' && (
+                <div className="grid gap-4 sm:grid-cols-2 p-4 bg-muted/50 rounded-lg border">
+                  <div className="grid gap-2">
+                    <Label htmlFor="siret">Numero SIRET</Label>
+                    <Input
+                      id="siret"
+                      name="siret"
+                      value={formData.siret}
+                      onChange={handleChange}
+                      placeholder="123 456 789 00012"
+                      maxLength={17}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="tva_number">Numero de TVA</Label>
+                    <Input
+                      id="tva_number"
+                      name="tva_number"
+                      value={formData.tva_number}
+                      onChange={handleChange}
+                      placeholder="FR12345678901"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
