@@ -37,6 +37,13 @@ export interface Client {
   updated_at: string
 }
 
+export interface QuoteLine {
+  description: string
+  quantity: number
+  unitPrice: number
+  total: number
+}
+
 export interface Intervention {
   id: string
   user_id: string
@@ -48,6 +55,9 @@ export interface Intervention {
   signature_data: string | null
   signed_at: string | null
   signer_name: string | null
+  quote_lines: QuoteLine[] | null
+  quote_pdf_url: string | null
+  quote_imported_at: string | null
   created_at: string
   updated_at: string
 }
