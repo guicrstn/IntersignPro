@@ -54,23 +54,12 @@ function NewInterventionContent() {
         // Check if user has quote_import option
         const { data: company } = await supabase
           .from('companies')
-          .select('id')
+          .select('id, quote_import_enabled')
           .eq('user_id', user.id)
           .single()
 
-        if (company) {
-          const { data: license } = await supabase
-            .from('licenses')
-            .select('id, license_options(option_key)')
-            .eq('company_id', company.id)
-            .single()
-
-          if (license?.license_options) {
-            const hasOption = license.license_options.some(
-              (opt: { option_key: string }) => opt.option_key === 'quote_import'
-            )
-            setHasQuoteOption(hasOption)
-          }
+        if (company?.quote_import_enabled) {
+          setHasQuoteOption(true)
         }
       }
       setIsFetching(false)
