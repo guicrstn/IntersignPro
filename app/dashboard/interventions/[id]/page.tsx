@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Company } from '@/lib/types'
 import { HourDeductionButton } from '@/components/hour-deduction'
+import { InterventionDeleteButton } from '@/components/intervention-delete-button'
 
 export default async function InterventionDetailPage({
   params,
@@ -69,6 +70,12 @@ export default async function InterventionDetailPage({
               interventionNumber={intervention.intervention_number}
             />
           )}
+          
+          {/* Delete Button */}
+          <InterventionDeleteButton
+            interventionId={id}
+            interventionNumber={intervention.intervention_number}
+          />
           
           {intervention.status === 'draft' && (
             <Button asChild>
