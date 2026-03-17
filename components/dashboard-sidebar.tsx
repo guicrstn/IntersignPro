@@ -13,6 +13,7 @@ import {
   CreditCard,
   Key,
   FileText,
+  Package,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { User } from '@supabase/supabase-js'
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
   { name: 'Documents', href: '/dashboard/documents', icon: FileText },
+  { name: 'Catalogue', href: '/dashboard/catalog', icon: Package },
   { name: 'Interventions', href: '/dashboard/interventions', icon: ClipboardList },
   { name: 'Abonnement', href: '/dashboard/subscription', icon: CreditCard },
   { name: 'Cles API', href: '/dashboard/api-keys', icon: Key },
