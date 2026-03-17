@@ -25,10 +25,12 @@ import { DocumentSignature } from '@/components/document-signature'
 import { DocumentConvert } from '@/components/document-convert'
 import { DocumentPDF } from '@/components/document-pdf'
 import { DocumentDeleteButton } from '@/components/document-delete-button'
+import { DocumentSendSignature } from '@/components/document-send-signature'
 
 const statusColors: Record<DocumentStatus, string> = {
   draft: 'bg-gray-100 text-gray-700',
   sent: 'bg-blue-100 text-blue-700',
+  pending_signature: 'bg-amber-100 text-amber-700',
   signed: 'bg-green-100 text-green-700',
   converted: 'bg-purple-100 text-purple-700',
   cancelled: 'bg-red-100 text-red-700',
@@ -139,6 +141,15 @@ export default async function DocumentDetailPage({
                 Modifier
               </Link>
             </Button>
+          )}
+          {(doc.status === 'draft' || doc.status === 'sent') && (
+            <DocumentSendSignature
+              documentId={id}
+              documentNumber={doc.document_number}
+              documentType={doc.document_type}
+              clientEmail={doc.client?.email || null}
+              clientName={doc.client?.name || ''}
+            />
           )}
           <DocumentPDF documentId={id} documentNumber={doc.document_number} />
           <DocumentDeleteButton

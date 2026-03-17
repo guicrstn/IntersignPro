@@ -170,7 +170,7 @@ export interface HourUsage {
 
 // Document types for quotes, orders, deliveries, invoices
 export type DocumentType = 'devis' | 'commande' | 'livraison' | 'facture'
-export type DocumentStatus = 'draft' | 'sent' | 'signed' | 'converted' | 'cancelled'
+export type DocumentStatus = 'draft' | 'sent' | 'pending_signature' | 'signed' | 'converted' | 'cancelled'
 export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'overdue'
 export type LineType = 'service' | 'product' | 'discount' | 'shipping'
 export type TvaRate = 20 | 10 | 5.5 | 2.1
@@ -262,6 +262,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
   draft: 'Brouillon',
   sent: 'Envoye',
+  pending_signature: 'En attente de signature',
   signed: 'Signe',
   converted: 'Converti',
   cancelled: 'Annule',
