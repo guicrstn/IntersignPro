@@ -395,10 +395,12 @@ export function DocumentPDFDocument({ document, company }: DocumentPDFDocumentPr
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
+    // Manual formatting to avoid Intl issues with react-pdf
+    const fixed = amount.toFixed(2)
+    const [intPart, decPart] = fixed.split('.')
+    // Add space as thousands separator
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    return `${formattedInt},${decPart} €`
   }
 
   return (
