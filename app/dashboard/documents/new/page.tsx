@@ -184,9 +184,9 @@ function NewDocumentContent() {
           line_type: item.item_type === 'product' ? 'product' : 'service',
           reference: item.reference || '',
           description: item.name + (item.description ? '\n' + item.description : ''),
-          unit: item.unit,
-          unit_price_ht: item.price_ht,
-          tva_rate: item.tva_rate,
+          unit: item.unit || 'unite',
+          unit_price_ht: item.price_ht || 0,
+          tva_rate: item.tva_rate || 20,
         } : line
       ))
     }
@@ -458,7 +458,7 @@ function NewDocumentContent() {
                       <div className="grid gap-2">
                         <Label>Reference</Label>
                         <Input
-                          value={line.reference}
+                          value={line.reference || ''}
                           onChange={(e) => handleLineChange(line.id, 'reference', e.target.value)}
                           placeholder="REF-001"
                         />
@@ -467,7 +467,7 @@ function NewDocumentContent() {
                     <div className="grid gap-2">
                       <Label>Description *</Label>
                       <Textarea
-                        value={line.description}
+                        value={line.description || ''}
                         onChange={(e) => handleLineChange(line.id, 'description', e.target.value)}
                         placeholder="Description de la prestation ou du materiel..."
                         rows={2}
@@ -481,14 +481,14 @@ function NewDocumentContent() {
                           type="number"
                           min="0"
                           step="0.001"
-                          value={line.quantity}
+                          value={line.quantity ?? 1}
                           onChange={(e) => handleLineChange(line.id, 'quantity', parseFloat(e.target.value) || 0)}
                         />
                       </div>
                       <div className="grid gap-2">
                         <Label>Unite</Label>
                         <Select
-                          value={line.unit}
+                          value={line.unit || 'unite'}
                           onValueChange={(value) => handleLineChange(line.id, 'unit', value)}
                         >
                           <SelectTrigger>
@@ -510,14 +510,14 @@ function NewDocumentContent() {
                           type="number"
                           min="0"
                           step="0.01"
-                          value={line.unit_price_ht}
+                          value={line.unit_price_ht ?? 0}
                           onChange={(e) => handleLineChange(line.id, 'unit_price_ht', parseFloat(e.target.value) || 0)}
                         />
                       </div>
                       <div className="grid gap-2">
                         <Label>TVA</Label>
                         <Select
-                          value={line.tva_rate.toString()}
+                          value={(line.tva_rate ?? 20).toString()}
                           onValueChange={(value) => handleLineChange(line.id, 'tva_rate', parseFloat(value))}
                         >
                           <SelectTrigger>
@@ -539,7 +539,7 @@ function NewDocumentContent() {
                           min="0"
                           max="100"
                           step="0.01"
-                          value={line.discount_percent}
+                          value={line.discount_percent ?? 0}
                           onChange={(e) => handleLineChange(line.id, 'discount_percent', parseFloat(e.target.value) || 0)}
                         />
                       </div>
