@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Send, Loader2, Copy, Check, Mail, MessageCircle, Link2 } from 'lucide-react'
+import { Send, Loader2, Copy, Check, Mail, MessageCircle, Link2, CheckCircle2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { DocumentType } from '@/lib/types'
 import { DOCUMENT_TYPE_LABELS } from '@/lib/types'
@@ -33,13 +33,57 @@ export function DocumentSendSignature({
   clientName,
 }: DocumentSendSignatureProps) {
   const [open, setOpen] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [signatureLink, setSignatureLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [emailSent, setEmailSent] = useState(false)
+  const [mode, setMode] = useState<'choose' | 'email' | 'manual'>('choose')
 
-  const generateSignatureLink = async () => {
-    setIsGenerating(true)
+  const sendByEmail = async () => {
+    if (!clientEmail) {
+      setError('Ce client n\'a pas d\'adresse email renseignee')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/documents/send-signature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId,
+          clientEmail,
+          clientName,
+          documentType,
+          documentNumber,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Erreur lors de l\'envoi')
+        setIsLoading(false)
+        return
+      }
+
+      setSignatureLink(data.signatureUrl)
+      setEmailSent(true)
+      setMode('email')
+
+    } catch (err) {
+      setError('Erreur de connexion')
+      console.error(err)
+    }
+
+    setIsLoading(false)
+  }
+
+  const generateLinkOnly = async () => {
+    setIsLoading(true)
     setError(null)
 
     try {
@@ -48,14 +92,14 @@ export function DocumentSendSignature({
 
       if (!user) {
         setError('Non authentifie')
-        setIsGenerating(false)
+        setIsLoading(false)
         return
       }
 
       // Generate unique token
       const token = crypto.randomUUID() + '-' + crypto.randomUUID()
       const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + 7) // Expire in 7 days
+      expiresAt.setDate(expiresAt.getDate() + 7)
 
       // Save token to database
       const { error: insertError } = await supabase
@@ -67,8 +111,8 @@ export function DocumentSendSignature({
         })
 
       if (insertError) {
-        setError('Erreur lors de la creation du lien: ' + insertError.message)
-        setIsGenerating(false)
+        setError('Erreur lors de la creation du lien')
+        setIsLoading(false)
         return
       }
 
@@ -78,17 +122,16 @@ export function DocumentSendSignature({
         .update({ status: 'pending_signature' })
         .eq('id', documentId)
 
-      // Generate link
       const baseUrl = window.location.origin
-      const link = `${baseUrl}/sign/${token}`
-      setSignatureLink(link)
+      setSignatureLink(`${baseUrl}/sign/${token}`)
+      setMode('manual')
 
     } catch (err) {
       setError('Erreur inattendue')
       console.error(err)
     }
 
-    setIsGenerating(false)
+    setIsLoading(false)
   }
 
   const copyToClipboard = async () => {
@@ -109,8 +152,7 @@ export function DocumentSendSignature({
         `Ce lien est valide pendant 7 jours.\n\n` +
         `Cordialement`
       )
-      const emailTo = clientEmail || ''
-      window.open(`mailto:${emailTo}?subject=${subject}&body=${body}`)
+      window.open(`mailto:${clientEmail || ''}?subject=${subject}&body=${body}`)
     }
   }
 
@@ -129,6 +171,8 @@ export function DocumentSendSignature({
     setSignatureLink(null)
     setCopied(false)
     setError(null)
+    setEmailSent(false)
+    setMode('choose')
     setOpen(false)
   }
 
@@ -147,28 +191,16 @@ export function DocumentSendSignature({
         <DialogHeader>
           <DialogTitle>Envoyer pour signature</DialogTitle>
           <DialogDescription>
-            Generez un lien de signature pour {clientName} et envoyez-le par email, WhatsApp ou autre.
+            Envoyez le {DOCUMENT_TYPE_LABELS[documentType].toLowerCase()} {documentNumber} a {clientName} pour signature.
           </DialogDescription>
         </DialogHeader>
 
-        {!signatureLink ? (
+        {mode === 'choose' && (
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Document</Label>
-              <p className="text-sm text-muted-foreground">
-                {DOCUMENT_TYPE_LABELS[documentType]} {documentNumber}
-              </p>
-            </div>
             <div className="space-y-2">
               <Label>Client</Label>
               <p className="text-sm text-muted-foreground">
-                {clientName} {clientEmail && `(${clientEmail})`}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Validite</Label>
-              <p className="text-sm text-muted-foreground">
-                Le lien sera valide pendant 7 jours
+                {clientName} {clientEmail && `- ${clientEmail}`}
               </p>
             </div>
 
@@ -176,25 +208,87 @@ export function DocumentSendSignature({
               <p className="text-sm text-destructive">{error}</p>
             )}
 
-            <Button 
-              onClick={generateSignatureLink} 
-              disabled={isGenerating}
-              className="w-full"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generation...
-                </>
-              ) : (
-                <>
-                  <Link2 className="mr-2 h-4 w-4" />
-                  Generer le lien de signature
-                </>
+            <div className="space-y-3">
+              <Button 
+                onClick={sendByEmail} 
+                disabled={isLoading || !clientEmail}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Envoyer par email
+                  </>
+                )}
+              </Button>
+              {!clientEmail && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Pas d'email renseigne pour ce client
+                </p>
               )}
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">ou</span>
+                </div>
+              </div>
+
+              <Button 
+                variant="outline"
+                onClick={generateLinkOnly} 
+                disabled={isLoading}
+                className="w-full"
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Generer un lien (envoi manuel)
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {mode === 'email' && emailSent && (
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col items-center text-center gap-3 py-4">
+              <div className="rounded-full bg-green-100 p-3">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium">Email envoye avec succes !</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {clientName} recevra un email a {clientEmail} avec le lien de signature.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="text-xs text-muted-foreground">Lien de signature (copie)</Label>
+              <div className="flex gap-2">
+                <Input 
+                  value={signatureLink || ''} 
+                  readOnly 
+                  className="text-xs"
+                />
+                <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                  {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <Button onClick={resetAndClose} className="w-full">
+              Fermer
             </Button>
           </div>
-        ) : (
+        )}
+
+        {mode === 'manual' && signatureLink && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Lien de signature</Label>
@@ -204,51 +298,32 @@ export function DocumentSendSignature({
                   readOnly 
                   className="text-xs"
                 />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={copyToClipboard}
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
+                <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                  {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Valide jusqu au {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
+                Valide jusqu'au {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
               </p>
             </div>
 
             <div className="space-y-2">
               <Label>Envoyer via</Label>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={openEmailClient}
-                  className="flex-1"
-                >
+                <Button variant="outline" onClick={openEmailClient} className="flex-1">
                   <Mail className="mr-2 h-4 w-4" />
                   Email
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={openWhatsApp}
-                  className="flex-1"
-                >
+                <Button variant="outline" onClick={openWhatsApp} className="flex-1">
                   <MessageCircle className="mr-2 h-4 w-4" />
                   WhatsApp
                 </Button>
               </div>
             </div>
 
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground text-center">
-                Le client pourra voir le document et le signer directement depuis ce lien.
-                Le statut passera automatiquement a "Signe" une fois la signature effectuee.
-              </p>
-            </div>
+            <p className="text-xs text-muted-foreground text-center pt-2 border-t">
+              Le client pourra voir et signer le document depuis ce lien.
+            </p>
           </div>
         )}
       </DialogContent>
