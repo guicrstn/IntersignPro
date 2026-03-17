@@ -398,9 +398,9 @@ export function DocumentPDFDocument({ document, company }: DocumentPDFDocumentPr
     // Manual formatting to avoid Intl issues with react-pdf
     const fixed = amount.toFixed(2)
     const [intPart, decPart] = fixed.split('.')
-    // Add space as thousands separator
-    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-    return `${formattedInt},${decPart} €`
+    // Use non-breaking space (Unicode) as thousands separator for PDF compatibility
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0')
+    return `${formattedInt},${decPart}\u00A0€`
   }
 
   return (
