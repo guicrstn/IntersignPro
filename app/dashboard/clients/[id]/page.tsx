@@ -8,6 +8,7 @@ import Link from 'next/link'
 import type { Intervention } from '@/lib/types'
 import { ClientDeleteButton } from '@/components/client-delete-button'
 import { HourContracts } from '@/components/hour-contracts'
+import { ClientDocumentsDashboard } from '@/components/client-documents-dashboard'
 
 export default async function ClientDetailPage({
   params,
@@ -192,6 +193,9 @@ export default async function ClientDetailPage({
 
         {/* Hour Contracts */}
         <HourContracts clientId={id} clientName={client.name} />
+
+        {/* Client Documents Dashboard */}
+        <ClientDocumentsDashboard clientId={id} clientName={client.name} />
       </div>
     </div>
   )
