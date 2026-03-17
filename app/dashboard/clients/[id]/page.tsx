@@ -50,8 +50,8 @@ export default async function ClientDetailPage({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-foreground">{client.name}</h1>
-              <Badge variant={client.client_type === 'professional' ? 'default' : 'secondary'}>
-                {client.client_type === 'professional' ? (
+              <Badge variant={client.client_type === 'professionnel' ? 'default' : 'secondary'}>
+                {client.client_type === 'professionnel' ? (
                   <><Building2 className="h-3 w-3 mr-1" /> Professionnel</>
                 ) : (
                   <><User className="h-3 w-3 mr-1" /> Particulier</>
@@ -112,7 +112,7 @@ export default async function ClientDetailPage({
             )}
 
             {/* Professional info - SIRET and TVA */}
-            {client.client_type === 'professional' && (client.siret || client.tva_number) && (
+            {client.client_type === 'professionnel' && (client.siret || client.tva_number) && (
               <div className="pt-4 border-t">
                 <p className="font-medium mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4" />

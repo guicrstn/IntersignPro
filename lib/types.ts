@@ -30,7 +30,7 @@ export interface Client {
   city: string | null
   postal_code: string | null
   notes: string | null
-  client_type: 'particular' | 'professional'
+  client_type: 'particulier' | 'professionnel'
   siret: string | null
   tva_number: string | null
   created_at: string
@@ -166,4 +166,103 @@ export interface HourUsage {
   description: string | null
   usage_date: string
   created_at: string
+}
+
+// Document types for quotes, orders, deliveries, invoices
+export type DocumentType = 'devis' | 'commande' | 'livraison' | 'facture'
+export type DocumentStatus = 'draft' | 'sent' | 'signed' | 'converted' | 'cancelled'
+export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'overdue'
+export type LineType = 'service' | 'product' | 'discount' | 'shipping'
+export type TvaRate = 20 | 10 | 5.5 | 2.1
+
+export interface Document {
+  id: string
+  user_id: string
+  client_id: string
+  document_type: DocumentType
+  document_number: string
+  parent_document_id: string | null
+  status: DocumentStatus
+  document_date: string
+  validity_date: string | null
+  due_date: string | null
+  subject: string | null
+  notes: string | null
+  internal_notes: string | null
+  terms: string | null
+  payment_method: string | null
+  payment_status: PaymentStatus | null
+  signature_data: string | null
+  signer_name: string | null
+  signed_at: string | null
+  pdf_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DocumentLine {
+  id: string
+  document_id: string
+  line_order: number
+  line_type: LineType
+  reference: string | null
+  description: string
+  quantity: number
+  unit: string
+  unit_price_ht: number
+  discount_percent: number
+  discount_amount: number
+  tva_rate: number
+  total_ht: number
+  total_tva: number
+  total_ttc: number
+  created_at: string
+}
+
+export interface DocumentTotals {
+  id: string
+  document_id: string
+  total_ht: number
+  total_discount: number
+  total_ht_after_discount: number
+  tva_20: number
+  tva_10: number
+  tva_5_5: number
+  tva_2_1: number
+  total_tva: number
+  total_ttc: number
+  updated_at: string
+}
+
+export interface DocumentWithClient extends Document {
+  client: Client
+}
+
+export interface DocumentWithDetails extends DocumentWithClient {
+  lines: DocumentLine[]
+  totals: DocumentTotals | null
+}
+
+// TVA rates available in France
+export const TVA_RATES: { value: number; label: string }[] = [
+  { value: 20, label: '20% (Taux normal)' },
+  { value: 10, label: '10% (Taux intermediaire)' },
+  { value: 5.5, label: '5,5% (Taux reduit)' },
+  { value: 2.1, label: '2,1% (Taux super-reduit)' },
+]
+
+// Document type labels
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  devis: 'Devis',
+  commande: 'Commande',
+  livraison: 'Bon de livraison',
+  facture: 'Facture',
+}
+
+export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
+  draft: 'Brouillon',
+  sent: 'Envoye',
+  signed: 'Signe',
+  converted: 'Converti',
+  cancelled: 'Annule',
 }

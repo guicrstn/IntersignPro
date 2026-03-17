@@ -32,7 +32,7 @@ export default function EditClientPage({
     postal_code: '',
     city: '',
     notes: '',
-    client_type: 'particular' as 'particular' | 'professional',
+    client_type: 'particulier' as 'particulier' | 'professionnel',
     siret: '',
     tva_number: '',
   })
@@ -55,7 +55,7 @@ export default function EditClientPage({
           postal_code: client.postal_code || '',
           city: client.city || '',
           notes: client.notes || '',
-          client_type: client.client_type || 'particular',
+          client_type: client.client_type || 'particulier',
           siret: client.siret || '',
           tva_number: client.tva_number || '',
         })
@@ -87,8 +87,8 @@ export default function EditClientPage({
         city: formData.city || null,
         notes: formData.notes || null,
         client_type: formData.client_type,
-        siret: formData.client_type === 'professional' ? (formData.siret || null) : null,
-        tva_number: formData.client_type === 'professional' ? (formData.tva_number || null) : null,
+        siret: formData.client_type === 'professionnel' ? (formData.siret || null) : null,
+        tva_number: formData.client_type === 'professionnel' ? (formData.tva_number || null) : null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -141,21 +141,21 @@ export default function EditClientPage({
                 <Label>Type de client *</Label>
                 <RadioGroup
                   value={formData.client_type}
-                  onValueChange={(value: 'particular' | 'professional') => 
+                  onValueChange={(value: 'particulier' | 'professionnel') => 
                     setFormData(prev => ({ ...prev, client_type: value }))
                   }
                   className="flex gap-4"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="particular" id="particular" />
-                    <Label htmlFor="particular" className="flex items-center gap-2 cursor-pointer font-normal">
+                    <RadioGroupItem value="particulier" id="particulier" />
+                    <Label htmlFor="particulier" className="flex items-center gap-2 cursor-pointer font-normal">
                       <User className="h-4 w-4" />
                       Particulier
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="professional" id="professional" />
-                    <Label htmlFor="professional" className="flex items-center gap-2 cursor-pointer font-normal">
+                    <RadioGroupItem value="professionnel" id="professionnel" />
+                    <Label htmlFor="professionnel" className="flex items-center gap-2 cursor-pointer font-normal">
                       <Building2 className="h-4 w-4" />
                       Professionnel
                     </Label>
@@ -176,7 +176,7 @@ export default function EditClientPage({
               </div>
 
               {/* Professional fields - only shown for professionals */}
-              {formData.client_type === 'professional' && (
+              {formData.client_type === 'professionnel' && (
                 <div className="grid gap-4 sm:grid-cols-2 p-4 bg-muted/50 rounded-lg border">
                   <div className="grid gap-2">
                     <Label htmlFor="siret">Numero SIRET</Label>
