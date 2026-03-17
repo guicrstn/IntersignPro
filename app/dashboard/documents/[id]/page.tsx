@@ -248,7 +248,7 @@ export default async function DocumentDetailPage({
             <DocumentSignature
               documentId={id}
               documentType={doc.document_type}
-              currentStatus={doc.status}
+              documentNumber={doc.document_number}
             />
           )}
 

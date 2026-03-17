@@ -683,8 +683,8 @@ function NewDocumentContent() {
                     </div>
                   </div>
                   <div className="text-right ml-4">
-                    <div className="font-medium">{item.price_ht.toFixed(2)} € HT</div>
-                    <div className="text-xs text-muted-foreground">TVA {item.tva_rate}%</div>
+                    <div className="font-medium">{(item.price_ht || 0).toFixed(2)} € HT</div>
+                    <div className="text-xs text-muted-foreground">TVA {item.tva_rate || 20}%</div>
                   </div>
                 </div>
               ))

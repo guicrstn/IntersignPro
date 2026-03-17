@@ -22,10 +22,10 @@ import { DOCUMENT_TYPE_LABELS } from '@/lib/types'
 interface DocumentSignatureProps {
   documentId: string
   documentType: DocumentType
-  documentNumber: string
+  documentNumber?: string
 }
 
-export function DocumentSignature({ documentId, documentType, documentNumber }: DocumentSignatureProps) {
+export function DocumentSignature({ documentId, documentType, documentNumber = '' }: DocumentSignatureProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [signerName, setSignerName] = useState('')
