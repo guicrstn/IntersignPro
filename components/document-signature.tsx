@@ -98,7 +98,7 @@ export function DocumentSignature({ documentId, documentType, documentNumber }: 
           <div className="space-y-2">
             <Label>Signature *</Label>
             <SignatureCanvas
-              onSave={setSignatureData}
+              onSignatureChange={setSignatureData}
               width={400}
               height={200}
             />
