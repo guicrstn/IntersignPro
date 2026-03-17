@@ -30,12 +30,12 @@ import {
 
 interface CatalogItem {
   id: string
-  item_type: 'product' | 'service'
+  product_type: 'product' | 'service'
   reference: string | null
   name: string
   description: string | null
   unit: string
-  price_ht: number
+  unit_price_ht: number
   tva_rate: number
   category: string | null
 }
@@ -181,11 +181,11 @@ function NewDocumentContent() {
       setLines(lines.map(line => 
         line.id === selectedLineId ? {
           ...line,
-          line_type: item.item_type === 'product' ? 'product' : 'service',
+          line_type: item.product_type === 'product' ? 'product' : 'service',
           reference: item.reference || '',
           description: item.name + (item.description ? '\n' + item.description : ''),
           unit: item.unit || 'unite',
-          unit_price_ht: item.price_ht || 0,
+          unit_price_ht: item.unit_price_ht || 0,
           tva_rate: item.tva_rate || 20,
         } : line
       ))
@@ -676,14 +676,14 @@ function NewDocumentContent() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className={item.item_type === 'product' ? 'text-blue-600' : 'text-green-600'}>
-                        {item.item_type === 'product' ? 'Materiel' : 'Prestation'}
+                      <span className={item.product_type === 'product' ? 'text-blue-600' : 'text-green-600'}>
+                        {item.product_type === 'product' ? 'Materiel' : 'Prestation'}
                       </span>
                       {item.category && <span>• {item.category}</span>}
                     </div>
                   </div>
                   <div className="text-right ml-4">
-                    <div className="font-medium">{(item.price_ht || 0).toFixed(2)} € HT</div>
+                    <div className="font-medium">{(item.unit_price_ht || 0).toFixed(2)} € HT</div>
                     <div className="text-xs text-muted-foreground">TVA {item.tva_rate || 20}%</div>
                   </div>
                 </div>
