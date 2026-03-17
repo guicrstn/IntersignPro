@@ -8,26 +8,21 @@ import {
   ShoppingCart, 
   Truck, 
   Receipt,
-  Search
+  Search,
+  FolderOpen,
+  ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import type { DocumentType, DocumentStatus, DocumentWithClient } from '@/lib/types'
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS } from '@/lib/types'
+import { DocumentFolderList } from '@/components/document-folder-list'
 
 const documentTypeIcons: Record<DocumentType, React.ReactNode> = {
   devis: <FileText className="h-4 w-4" />,
   commande: <ShoppingCart className="h-4 w-4" />,
   livraison: <Truck className="h-4 w-4" />,
   facture: <Receipt className="h-4 w-4" />,
-}
-
-const statusColors: Record<DocumentStatus, string> = {
-  draft: 'bg-gray-100 text-gray-700',
-  sent: 'bg-blue-100 text-blue-700',
-  signed: 'bg-green-100 text-green-700',
-  converted: 'bg-purple-100 text-purple-700',
-  cancelled: 'bg-red-100 text-red-700',
 }
 
 export default async function DocumentsPage() {
@@ -42,7 +37,6 @@ export default async function DocumentsPage() {
     `)
     .eq('user_id', user!.id)
     .order('created_at', { ascending: false })
-    .limit(50)
 
   // Get stats
   const { data: stats } = await supabase
@@ -54,6 +48,9 @@ export default async function DocumentsPage() {
   const commandeCount = stats?.filter(d => d.document_type === 'commande').length || 0
   const livraisonCount = stats?.filter(d => d.document_type === 'livraison').length || 0
   const factureCount = stats?.filter(d => d.document_type === 'facture').length || 0
+
+  // Group documents into folders (chains of related documents)
+  const documentFolders = groupDocumentsIntoFolders(documents as DocumentWithClient[] || [])
 
   return (
     <div className="space-y-6">
@@ -129,48 +126,19 @@ export default async function DocumentsPage() {
         </Button>
       </div>
 
-      {/* Documents List */}
+      {/* Documents List - Grouped by Folder */}
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>Tous les documents</CardTitle>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Rechercher..." className="pl-8" />
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <FolderOpen className="h-5 w-5" />
+              Dossiers ({documentFolders.length})
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          {documents && documents.length > 0 ? (
-            <div className="space-y-2">
-              {(documents as DocumentWithClient[]).map((doc) => (
-                <Link
-                  key={doc.id}
-                  href={`/dashboard/documents/${doc.id}`}
-                  className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      {documentTypeIcons[doc.document_type]}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{doc.document_number}</p>
-                        <Badge variant="outline" className="text-xs">
-                          {DOCUMENT_TYPE_LABELS[doc.document_type]}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {doc.client?.name} - {new Date(doc.document_date).toLocaleDateString('fr-FR')}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge className={statusColors[doc.status]}>
-                    {DOCUMENT_STATUS_LABELS[doc.status]}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
+          {documentFolders.length > 0 ? (
+            <DocumentFolderList folders={documentFolders} />
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="mx-auto h-12 w-12 mb-4" />
@@ -187,5 +155,93 @@ export default async function DocumentsPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+// Types for document folders
+export interface DocumentFolder {
+  id: string // Root document ID or folder number
+  folderNumber: string // e.g., "0001"
+  clientName: string
+  clientId: string
+  createdAt: string
+  documents: DocumentWithClient[]
+  latestStatus: DocumentStatus
+  hasDevis: boolean
+  hasCommande: boolean
+  hasLivraison: boolean
+  hasFacture: boolean
+}
+
+// Function to group documents into folders
+function groupDocumentsIntoFolders(documents: DocumentWithClient[]): DocumentFolder[] {
+  const folders: Map<string, DocumentFolder> = new Map()
+  
+  // Build a map of document ID to document
+  const docMap = new Map<string, DocumentWithClient>()
+  documents.forEach(doc => docMap.set(doc.id, doc))
+  
+  // Find root document for each document (follow parent_document_id chain)
+  function findRootDocumentId(doc: DocumentWithClient): string {
+    if (!doc.parent_document_id) {
+      return doc.id
+    }
+    const parent = docMap.get(doc.parent_document_id)
+    if (parent) {
+      return findRootDocumentId(parent)
+    }
+    return doc.id
+  }
+  
+  // Group documents by root document
+  documents.forEach(doc => {
+    const rootId = findRootDocumentId(doc)
+    const rootDoc = docMap.get(rootId) || doc
+    
+    // Extract folder number from document number (e.g., "DEV-2026-0001" -> "0001")
+    const folderNumber = rootDoc.document_number.split('-').pop() || rootDoc.id.slice(0, 4)
+    
+    if (!folders.has(rootId)) {
+      folders.set(rootId, {
+        id: rootId,
+        folderNumber: folderNumber,
+        clientName: rootDoc.client?.name || 'Client inconnu',
+        clientId: rootDoc.client_id,
+        createdAt: rootDoc.created_at,
+        documents: [],
+        latestStatus: 'draft',
+        hasDevis: false,
+        hasCommande: false,
+        hasLivraison: false,
+        hasFacture: false,
+      })
+    }
+    
+    const folder = folders.get(rootId)!
+    folder.documents.push(doc)
+    
+    // Track document types
+    if (doc.document_type === 'devis') folder.hasDevis = true
+    if (doc.document_type === 'commande') folder.hasCommande = true
+    if (doc.document_type === 'livraison') folder.hasLivraison = true
+    if (doc.document_type === 'facture') folder.hasFacture = true
+    
+    // Update latest status based on document hierarchy
+    if (doc.status === 'signed' && folder.latestStatus !== 'signed') {
+      folder.latestStatus = 'signed'
+    }
+  })
+  
+  // Sort documents within each folder by type order
+  const typeOrder: DocumentType[] = ['devis', 'commande', 'livraison', 'facture']
+  folders.forEach(folder => {
+    folder.documents.sort((a, b) => {
+      return typeOrder.indexOf(a.document_type) - typeOrder.indexOf(b.document_type)
+    })
+  })
+  
+  // Return folders sorted by creation date (newest first)
+  return Array.from(folders.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )
 }
