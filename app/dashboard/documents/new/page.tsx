@@ -15,10 +15,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Save, Plus, Trash2, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Plus, Trash2, Loader2, Package, Search } from 'lucide-react'
 import Link from 'next/link'
 import type { Client, DocumentType, DocumentLine, LineType } from '@/lib/types'
 import { TVA_RATES, DOCUMENT_TYPE_LABELS } from '@/lib/types'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+
+interface CatalogItem {
+  id: string
+  item_type: 'product' | 'service'
+  reference: string | null
+  name: string
+  description: string | null
+  unit: string
+  price_ht: number
+  tva_rate: number
+  category: string | null
+}
 
 interface LineItem {
   id: string
@@ -46,6 +66,10 @@ function NewDocumentContent() {
   const [isFetchingClients, setIsFetchingClients] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [clients, setClients] = useState<Client[]>([])
+  const [catalog, setCatalog] = useState<CatalogItem[]>([])
+  const [catalogDialogOpen, setCatalogDialogOpen] = useState(false)
+  const [catalogSearch, setCatalogSearch] = useState('')
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null)
   
   const [formData, setFormData] = useState({
     document_type: typeParam,
@@ -72,22 +96,33 @@ function NewDocumentContent() {
   ])
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
-        const { data } = await supabase
+        // Fetch clients
+        const { data: clientsData } = await supabase
           .from('clients')
           .select('*')
           .eq('user_id', user.id)
           .order('name')
         
-        if (data) setClients(data)
+        if (clientsData) setClients(clientsData)
+
+        // Fetch catalog
+        const { data: catalogData } = await supabase
+          .from('product_catalog')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .order('name')
+        
+        if (catalogData) setCatalog(catalogData)
       }
       setIsFetchingClients(false)
     }
-    fetchClients()
+    fetchData()
   }, [])
 
   // Calculate totals
@@ -140,6 +175,36 @@ function NewDocumentContent() {
       line.id === id ? { ...line, [field]: value } : line
     ))
   }
+
+  const handleSelectCatalogItem = (item: CatalogItem) => {
+    if (selectedLineId) {
+      setLines(lines.map(line => 
+        line.id === selectedLineId ? {
+          ...line,
+          line_type: item.item_type === 'product' ? 'product' : 'service',
+          reference: item.reference || '',
+          description: item.name + (item.description ? '\n' + item.description : ''),
+          unit: item.unit,
+          unit_price_ht: item.price_ht,
+          tva_rate: item.tva_rate,
+        } : line
+      ))
+    }
+    setCatalogDialogOpen(false)
+    setCatalogSearch('')
+    setSelectedLineId(null)
+  }
+
+  const openCatalogDialog = (lineId: string) => {
+    setSelectedLineId(lineId)
+    setCatalogDialogOpen(true)
+  }
+
+  const filteredCatalog = catalog.filter(item => 
+    item.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+    item.reference?.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+    item.category?.toLowerCase().includes(catalogSearch.toLowerCase())
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -351,15 +416,26 @@ function NewDocumentContent() {
                       <span className="text-sm font-medium text-muted-foreground">
                         Ligne {index + 1}
                       </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveLine(line.id)}
-                        disabled={lines.length === 1}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openCatalogDialog(line.id)}
+                        >
+                          <Package className="mr-2 h-4 w-4" />
+                          Catalogue
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveLine(line.id)}
+                          disabled={lines.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="grid gap-2">
@@ -547,6 +623,75 @@ function NewDocumentContent() {
           </Button>
         </div>
       </form>
+
+      {/* Catalog Selection Dialog */}
+      <Dialog open={catalogDialogOpen} onOpenChange={setCatalogDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Selectionner un article du catalogue</DialogTitle>
+            <DialogDescription>
+              Choisissez un produit ou une prestation de votre catalogue
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom, reference ou categorie..."
+              value={catalogSearch}
+              onChange={(e) => setCatalogSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <div className="flex-1 overflow-y-auto min-h-0 space-y-2 mt-4">
+            {filteredCatalog.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {catalog.length === 0 ? (
+                  <div>
+                    <Package className="mx-auto h-12 w-12 mb-2 opacity-50" />
+                    <p>Aucun article dans le catalogue</p>
+                    <Button variant="link" asChild className="mt-2">
+                      <Link href="/dashboard/catalog/new">Creer un article</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <p>Aucun resultat pour "{catalogSearch}"</p>
+                )}
+              </div>
+            ) : (
+              filteredCatalog.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+                  onClick={() => handleSelectCatalogItem(item)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{item.name}</span>
+                      {item.reference && (
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                          {item.reference}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className={item.item_type === 'product' ? 'text-blue-600' : 'text-green-600'}>
+                        {item.item_type === 'product' ? 'Materiel' : 'Prestation'}
+                      </span>
+                      {item.category && <span>• {item.category}</span>}
+                    </div>
+                  </div>
+                  <div className="text-right ml-4">
+                    <div className="font-medium">{item.price_ht.toFixed(2)} € HT</div>
+                    <div className="text-xs text-muted-foreground">TVA {item.tva_rate}%</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
