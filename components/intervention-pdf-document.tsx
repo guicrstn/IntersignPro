@@ -157,6 +157,73 @@ const styles = StyleSheet.create({
     color: '#155724',
     textAlign: 'center',
   },
+  // Quote lines table styles
+  quoteTable: {
+    width: '100%',
+    marginTop: 10,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#1e3a5f',
+    padding: 8,
+  },
+  tableHeaderText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    padding: 8,
+  },
+  tableRowAlt: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    padding: 8,
+    backgroundColor: '#f8f9fa',
+  },
+  colDescription: {
+    flex: 3,
+  },
+  colQty: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  colPrice: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  colTotal: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  tableText: {
+    fontSize: 9,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    padding: 10,
+    backgroundColor: '#f0f4f8',
+    borderTopWidth: 2,
+    borderTopColor: '#1e3a5f',
+  },
+  totalLabel: {
+    flex: 5,
+    textAlign: 'right',
+    fontSize: 11,
+    fontWeight: 'bold',
+    paddingRight: 10,
+  },
+  totalAmount: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#1e3a5f',
+  },
 })
 
 interface InterventionPDFDocumentProps {
@@ -232,10 +299,10 @@ export function InterventionPDFDocument({ intervention, company }: InterventionP
               <Text style={styles.clientDetail}>{intervention.client?.email}</Text>
             )}
             {/* Professional client info */}
-            {intervention.client?.client_type === 'professional' && intervention.client?.siret && (
+            {intervention.client?.client_type === 'professionnel' && intervention.client?.siret && (
               <Text style={styles.clientDetail}>SIRET: {intervention.client.siret}</Text>
             )}
-            {intervention.client?.client_type === 'professional' && intervention.client?.tva_number && (
+            {intervention.client?.client_type === 'professionnel' && intervention.client?.tva_number && (
               <Text style={styles.clientDetail}>N° TVA: {intervention.client.tva_number}</Text>
             )}
           </View>
