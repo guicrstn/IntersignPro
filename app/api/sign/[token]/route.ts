@@ -1,8 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   devis: 'Devis',
@@ -152,13 +149,20 @@ export async function POST(
       return NextResponse.json({ error: 'Erreur lors de la signature' }, { status: 500 })
     }
 
+    // Get document info for client email
+    const { data: document } = await supabase
+      .from('documents')
+      .select('*, client:clients(*)')
+      .eq('id', tokenData.document_id)
+      .single()
+
     // Update document signature
     const { error: updateSigError } = await supabase
       .from('document_signatures')
       .upsert({
         document_id: tokenData.document_id,
         signer_name: signerName,
-        signer_email: tokenData.client_email,
+        signer_email: document?.client?.email || null,
         signature_data: signatureData,
         signed_at: new Date().toISOString(),
         ip_address: ip,
@@ -176,88 +180,6 @@ export async function POST(
 
     if (updateDocError) {
       console.error('Error updating document status:', updateDocError)
-    }
-
-    // Get document and owner info for notification
-    const { data: document } = await supabase
-      .from('documents')
-      .select('*, client:clients(*)')
-      .eq('id', tokenData.document_id)
-      .single()
-
-    // Get user email for notification
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('id', document?.user_id)
-      .single()
-
-    // Get company info
-    const { data: company } = await supabase
-      .from('companies')
-      .select('name, email')
-      .eq('user_id', document?.user_id)
-      .single()
-
-    const ownerEmail = company?.email || profile?.email
-
-    // Send notification email to document owner
-    if (ownerEmail && document) {
-      const documentTypeLabel = DOCUMENT_TYPE_LABELS[document.document_type] || document.document_type
-      
-      try {
-        await resend.emails.send({
-          from: 'InterSign Pro <onboarding@resend.dev>',
-          to: ownerEmail,
-          subject: `${documentTypeLabel} ${document.document_number} signe par ${signerName}`,
-          html: `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            </head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 24px;">Document signe !</h1>
-              </div>
-              
-              <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
-                <p>Bonjour,</p>
-                
-                <p>Le ${documentTypeLabel.toLowerCase()} <strong>${document.document_number}</strong> a ete signe par <strong>${signerName}</strong>.</p>
-                
-                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                  <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                      <td style="padding: 8px 0; color: #6b7280;">Document:</td>
-                      <td style="padding: 8px 0; text-align: right; font-weight: 600;">${documentTypeLabel} ${document.document_number}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 8px 0; color: #6b7280;">Client:</td>
-                      <td style="padding: 8px 0; text-align: right;">${document.client?.name}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 8px 0; color: #6b7280;">Signe par:</td>
-                      <td style="padding: 8px 0; text-align: right;">${signerName}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 8px 0; color: #6b7280;">Date:</td>
-                      <td style="padding: 8px 0; text-align: right;">${new Date().toLocaleDateString('fr-FR')} a ${new Date().toLocaleTimeString('fr-FR')}</td>
-                    </tr>
-                  </table>
-                </div>
-                
-                <p>Vous pouvez consulter le document dans votre espace InterSign Pro.</p>
-              </div>
-            </body>
-            </html>
-          `,
-        })
-      } catch (emailError) {
-        console.error('Error sending notification email:', emailError)
-        // Don't fail the signature if notification fails
-      }
     }
 
     return NextResponse.json({ success: true })
