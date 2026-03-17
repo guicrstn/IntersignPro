@@ -318,6 +318,54 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#666',
   },
+  // Paid stamp for invoices
+  paidStampContainer: {
+    position: 'absolute',
+    top: 200,
+    right: 40,
+    transform: 'rotate(-15deg)',
+  },
+  paidStamp: {
+    padding: '15px 25px',
+    borderWidth: 4,
+    borderColor: '#22c55e',
+    borderRadius: 8,
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+  },
+  paidText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#22c55e',
+    textAlign: 'center',
+  },
+  paidDate: {
+    fontSize: 10,
+    color: '#22c55e',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  // Delivery info
+  deliveryInfo: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#e0f2fe',
+    borderRadius: 4,
+  },
+  deliveryText: {
+    fontSize: 9,
+    color: '#0369a1',
+  },
+  // Order confirmation
+  orderConfirmation: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#fef3c7',
+    borderRadius: 4,
+  },
+  orderText: {
+    fontSize: 9,
+    color: '#92400e',
+  },
 })
 
 const DOCUMENT_TITLES: Record<DocumentType, string> = {
@@ -402,6 +450,18 @@ export function DocumentPDFDocument({ document, company }: DocumentPDFDocumentPr
 
         {/* Title */}
         <Text style={styles.title}>{DOCUMENT_TITLES[document.document_type]}</Text>
+
+        {/* Paid Stamp for invoices */}
+        {document.document_type === 'facture' && document.payment_status === 'paid' && (
+          <View style={styles.paidStampContainer}>
+            <View style={styles.paidStamp}>
+              <Text style={styles.paidText}>PAYE</Text>
+              <Text style={styles.paidDate}>
+                {new Date().toLocaleDateString('fr-FR')}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Client */}
         <View style={styles.section}>
@@ -562,6 +622,36 @@ export function DocumentPDFDocument({ document, company }: DocumentPDFDocumentPr
           <View style={styles.termsBox}>
             <Text style={styles.termsTitle}>Conditions</Text>
             <Text style={styles.termsText}>{document.terms}</Text>
+          </View>
+        )}
+
+        {/* Document-specific information */}
+        {document.document_type === 'commande' && (
+          <View style={styles.orderConfirmation}>
+            <Text style={styles.orderText}>
+              En signant ce bon de commande, le client confirme son accord sur les produits/prestations 
+              ci-dessus et s'engage a en regler le montant selon les conditions convenues.
+            </Text>
+          </View>
+        )}
+
+        {document.document_type === 'livraison' && (
+          <View style={styles.deliveryInfo}>
+            <Text style={styles.deliveryText}>
+              En signant ce bon de livraison, le client confirme avoir recu le(s) materiel(s) 
+              ci-dessus en bon etat et conforme(s) a la commande.
+            </Text>
+          </View>
+        )}
+
+        {document.document_type === 'facture' && (
+          <View style={styles.termsBox}>
+            <Text style={styles.termsTitle}>Mentions legales</Text>
+            <Text style={styles.termsText}>
+              En cas de retard de paiement, une penalite de 3 fois le taux d'interet legal sera appliquee, 
+              ainsi qu'une indemnite forfaitaire de 40€ pour frais de recouvrement.
+              {document.payment_status === 'paid' ? ' Cette facture a ete reglee.' : ''}
+            </Text>
           </View>
         )}
 
