@@ -18,6 +18,7 @@ export default function DocumentPDFPage() {
 
   const [document, setDocument] = useState<DocumentWithDetails | null>(null)
   const [company, setCompany] = useState<Company | null>(null)
+  const [logoBase64, setLogoBase64] = useState<string | null>(null)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -41,6 +42,23 @@ export default function DocumentPDFPage() {
         .single()
 
       setCompany(companyData)
+
+      // Load company logo as base64 if exists
+      if (companyData?.logo_url) {
+        try {
+          const logoResponse = await fetch(`/api/logo?pathname=${encodeURIComponent(companyData.logo_url)}`)
+          if (logoResponse.ok) {
+            const blob = await logoResponse.blob()
+            const reader = new FileReader()
+            reader.onloadend = () => {
+              setLogoBase64(reader.result as string)
+            }
+            reader.readAsDataURL(blob)
+          }
+        } catch (err) {
+          console.error('Error loading logo:', err)
+        }
+      }
 
       // Get document with client
       const { data: docData, error: docError } = await supabase
@@ -80,18 +98,29 @@ export default function DocumentPDFPage() {
 
       setDocument(fullDocument)
       setIsLoading(false)
-
-      // Generate PDF
-      generatePDF(fullDocument, companyData)
     }
 
     fetchData()
   }, [id, router])
 
-  const generatePDF = async (doc: DocumentWithDetails, comp: Company | null) => {
+  // Generate PDF when document and logo are ready
+  useEffect(() => {
+    if (document && company !== undefined && !isLoading) {
+      generatePDF()
+    }
+  }, [document, company, logoBase64, isLoading])
+
+  const generatePDF = async () => {
+    if (!document) return
     setIsGenerating(true)
     try {
-      const blob = await pdf(<DocumentPDFDocument document={doc} company={comp} />).toBlob()
+      const blob = await pdf(
+        <DocumentPDFDocument 
+          document={document} 
+          company={company} 
+          logoBase64={logoBase64}
+        />
+      ).toBlob()
       const url = URL.createObjectURL(blob)
       setPdfUrl(url)
     } catch (err) {

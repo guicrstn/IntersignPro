@@ -378,9 +378,10 @@ const DOCUMENT_TITLES: Record<DocumentType, string> = {
 interface DocumentPDFDocumentProps {
   document: DocumentWithDetails
   company: Company | null
+  logoBase64?: string | null
 }
 
-export function DocumentPDFDocument({ document, company }: DocumentPDFDocumentProps) {
+export function DocumentPDFDocument({ document, company, logoBase64 }: DocumentPDFDocumentProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       weekday: 'long',
@@ -409,8 +410,8 @@ export function DocumentPDFDocument({ document, company }: DocumentPDFDocumentPr
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
-            {company?.logo_url ? (
-              <Image src={company.logo_url} style={styles.companyLogo} />
+            {logoBase64 ? (
+              <Image src={logoBase64} style={styles.companyLogo} />
             ) : (
               <Text style={styles.companyName}>{company?.name || 'Ma Societe'}</Text>
             )}
