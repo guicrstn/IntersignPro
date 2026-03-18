@@ -47,16 +47,24 @@ export function ClientFinancialStats({ clientId }: ClientFinancialStatsProps) {
     const fetchStats = async () => {
       const supabase = createClient()
 
-      // Get all documents for this client with their totals
+      // Get all documents for this client
       const { data: documents } = await supabase
         .from('documents')
-        .select(`
-          id,
-          document_type,
-          status,
-          document_totals (total_ttc)
-        `)
+        .select('id, document_type, status')
         .eq('client_id', clientId)
+
+      // Get totals for all documents
+      const allDocIds = documents?.map(d => d.id) || []
+      const { data: allTotals } = await supabase
+        .from('document_totals')
+        .select('document_id, total_ttc')
+        .in('document_id', allDocIds)
+
+      // Create a map of document_id -> total_ttc
+      const totalsMap: Record<string, number> = {}
+      allTotals?.forEach(t => {
+        totalsMap[t.document_id] = t.total_ttc || 0
+      })
 
       // Get document lines to calculate materiel vs prestation
       const { data: documentIds } = await supabase
@@ -112,7 +120,7 @@ export function ClientFinancialStats({ clientId }: ClientFinancialStatsProps) {
       let facturesAmount = 0
 
       documents?.forEach(doc => {
-        const total = doc.document_totals?.[0]?.total_ttc || 0
+        const total = totalsMap[doc.id] || 0
 
         if (doc.document_type === 'devis' && (doc.status === 'signed' || doc.status === 'converted')) {
           devisSigned++
