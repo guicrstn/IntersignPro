@@ -51,20 +51,27 @@ export function RevenueDashboard() {
       const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0]
       const endDate = now.toISOString().split('T')[0]
 
-      // Get all signed/converted documents with totals
+      // Get all signed/converted documents
       const { data: documents } = await supabase
         .from('documents')
-        .select(`
-          id,
-          document_type,
-          status,
-          document_date,
-          document_totals (total_ttc)
-        `)
+        .select('id, document_type, status, document_date')
         .eq('user_id', user.id)
         .in('status', ['signed', 'converted'])
         .gte('document_date', startOfYear)
         .lte('document_date', endDate)
+
+      // Get all totals for these documents
+      const docIds = documents?.map(d => d.id) || []
+      const { data: totals } = await supabase
+        .from('document_totals')
+        .select('document_id, total_ttc')
+        .in('document_id', docIds)
+
+      // Create a map of document_id -> total_ttc
+      const totalsMap: Record<string, number> = {}
+      totals?.forEach(t => {
+        totalsMap[t.document_id] = t.total_ttc || 0
+      })
 
       // Calculate stats
       let monthlyDevis = { count: 0, amount: 0 }
@@ -75,7 +82,7 @@ export function RevenueDashboard() {
       let yearlyFactures = { count: 0, amount: 0 }
 
       documents?.forEach(doc => {
-        const total = doc.document_totals?.[0]?.total_ttc || 0
+        const total = totalsMap[doc.id] || 0
         const docDate = doc.document_date
         const isCurrentMonth = docDate >= startOfMonth
 
