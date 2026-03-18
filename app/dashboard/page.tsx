@@ -5,6 +5,7 @@ import { Users, ClipboardList, Clock, CheckCircle, PlusCircle, ArrowRight } from
 import Link from 'next/link'
 import type { Client, Intervention } from '@/lib/types'
 import { ActivityChart } from '@/components/activity-chart'
+import { RevenueDashboard } from '@/components/revenue-dashboard'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -107,6 +108,9 @@ export default async function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Revenue Dashboard */}
+      <RevenueDashboard />
 
       {/* Activity Chart */}
       <ActivityChart interventions={allInterventions || []} />
