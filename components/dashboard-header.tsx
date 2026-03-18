@@ -22,6 +22,10 @@ import {
   Users,
   ClipboardList,
   PlusCircle,
+  FileText,
+  Package,
+  CreditCard,
+  Key,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -38,7 +42,11 @@ interface DashboardHeaderProps {
 const navigation = [
   { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
+  { name: 'Documents', href: '/dashboard/documents', icon: FileText },
+  { name: 'Catalogue', href: '/dashboard/catalog', icon: Package },
   { name: 'Interventions', href: '/dashboard/interventions', icon: ClipboardList },
+  { name: 'Abonnement', href: '/dashboard/subscription', icon: CreditCard },
+  { name: 'Cles API', href: '/dashboard/api-keys', icon: Key },
   { name: 'Parametres', href: '/dashboard/settings', icon: Settings },
 ]
 
