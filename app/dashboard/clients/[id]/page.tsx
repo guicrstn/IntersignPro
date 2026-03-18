@@ -9,6 +9,7 @@ import type { Intervention } from '@/lib/types'
 import { ClientDeleteButton } from '@/components/client-delete-button'
 import { HourContracts } from '@/components/hour-contracts'
 import { ClientDocumentsDashboard } from '@/components/client-documents-dashboard'
+import { ClientFinancialStats } from '@/components/client-financial-stats'
 
 export default async function ClientDetailPage({
   params,
@@ -72,6 +73,9 @@ export default async function ClientDetailPage({
           <ClientDeleteButton clientId={id} clientName={client.name} />
         </div>
       </div>
+
+      {/* Financial Stats */}
+      <ClientFinancialStats clientId={id} />
 
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {/* Client Info */}
