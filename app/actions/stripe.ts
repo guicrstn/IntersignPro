@@ -31,13 +31,13 @@ export async function createCheckoutSession(planId: PlanId, quantity: number = 1
     throw new Error('Plan invalide')
   }
 
-  // Valider la quantite
-  if (quantity < 1 || quantity > 100) {
-    throw new Error('Nombre de licences invalide (1-100)')
-  }
-  
-  // Utiliser l'URL fournie par le client ou celle du serveur
-  const appUrl = baseUrl || getBaseUrl()
+  // Forcer la conversion en entier - protege contre toute valeur non numerique
+  const rawQty = parseInt(String(quantity), 10)
+  const safeQuantity = isNaN(rawQty) ? 1 : Math.max(1, Math.min(10, rawQty))
+
+  // Valider que l'URL est bien une URL et pas une quantite mal passee
+  const isValidUrl = (val: unknown) => typeof val === 'string' && val.startsWith('http')
+  const appUrl = isValidUrl(baseUrl) ? baseUrl as string : getBaseUrl()
 
   // Verifier si l'utilisateur a deja utilise son essai gratuit
   const { data: company } = await supabase
@@ -76,17 +76,17 @@ export async function createCheckoutSession(planId: PlanId, quantity: number = 1
         price_data: {
           currency: 'eur',
           product_data: {
-            name: `${plan.name} - ${quantity} licence${quantity > 1 ? 's' : ''}`,
+            name: `${plan.name} - ${safeQuantity} licence${safeQuantity > 1 ? 's' : ''}`,
             description: plan.description,
           },
-          unit_amount: priceTTC, // Prix TTC
+          unit_amount: priceTTC,
           ...(plan.mode === 'subscription' && plan.interval && {
             recurring: {
               interval: plan.interval,
             },
           }),
         },
-        quantity: quantity,
+        quantity: safeQuantity,
       },
     ],
     mode: plan.mode === 'subscription' ? 'subscription' : 'payment',
@@ -95,7 +95,7 @@ export async function createCheckoutSession(planId: PlanId, quantity: number = 1
     metadata: {
       user_id: user.id,
       plan_id: plan.id,
-      quantity: quantity.toString(),
+      quantity: safeQuantity.toString(),
     },
     // Afficher les details de TVA
     automatic_tax: { enabled: false },
@@ -117,7 +117,7 @@ export async function createCheckoutSession(planId: PlanId, quantity: number = 1
       metadata: {
         user_id: user.id,
         plan_id: plan.id,
-        quantity: quantity.toString(),
+        quantity: safeQuantity.toString(),
       },
     }
   }

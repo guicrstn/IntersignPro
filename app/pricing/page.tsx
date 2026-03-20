@@ -36,14 +36,14 @@ function PricingContent() {
   const updateQuantity = (planId: string, delta: number) => {
     setQuantities(prev => ({
       ...prev,
-      [planId]: Math.max(1, Math.min(100, (prev[planId] || 1) + delta))
+      [planId]: Math.max(1, Math.min(10, (prev[planId] || 1) + delta))
     }))
   }
 
   const setQuantity = (planId: string, value: number) => {
     setQuantities(prev => ({
       ...prev,
-      [planId]: Math.max(1, Math.min(100, value || 1))
+      [planId]: Math.max(1, Math.min(10, value || 1))
     }))
   }
 
@@ -213,7 +213,7 @@ function PricingContent() {
                       <Input
                         type="number"
                         min="1"
-                        max="100"
+                        max="10"
                         value={quantity}
                         onChange={(e) => setQuantity(plan.id, parseInt(e.target.value))}
                         className="w-20 text-center"
@@ -222,7 +222,7 @@ function PricingContent() {
                         variant="outline"
                         size="icon"
                         onClick={() => updateQuantity(plan.id, 1)}
-                        disabled={quantity >= 100}
+                        disabled={quantity >= 10}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
