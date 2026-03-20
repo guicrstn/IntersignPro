@@ -271,6 +271,48 @@ function PricingContent() {
           })}
         </div>
 
+        {/* Enterprise / Sur devis */}
+        <Card className="max-w-4xl mx-auto mt-10 bg-gradient-to-r from-muted/50 to-muted border-dashed">
+          <CardContent className="p-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="text-center md:text-left">
+                <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
+                  <div className="p-2 bg-primary/10 rounded-full">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold">Entreprise (+10 licences)</h3>
+                </div>
+                <p className="text-muted-foreground max-w-md">
+                  Vous avez besoin de plus de 10 utilisateurs ? Contactez-nous pour obtenir un devis personnalise avec des tarifs degressifs.
+                </p>
+                <ul className="flex flex-wrap gap-4 mt-4 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-1">
+                    <Check className="h-4 w-4 text-primary" />
+                    Tarifs degressifs
+                  </li>
+                  <li className="flex items-center gap-1">
+                    <Check className="h-4 w-4 text-primary" />
+                    Support prioritaire
+                  </li>
+                  <li className="flex items-center gap-1">
+                    <Check className="h-4 w-4 text-primary" />
+                    Formation incluse
+                  </li>
+                  <li className="flex items-center gap-1">
+                    <Check className="h-4 w-4 text-primary" />
+                    Facturation personnalisee
+                  </li>
+                </ul>
+              </div>
+              <Button asChild size="lg" variant="outline" className="shrink-0">
+                <Link href="mailto:contact@intersign-pro.fr?subject=Demande de devis entreprise (+10 licences)">
+                  Demander un devis
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* FAQ / Trust */}
         <div className="mt-16 text-center">
           <p className="text-muted-foreground text-sm">
