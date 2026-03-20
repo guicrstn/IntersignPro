@@ -1,7 +1,7 @@
 'use server'
 
 import { stripe } from '@/lib/stripe'
-import { PRODUCTS, type PlanId } from '@/lib/products'
+import { PRODUCTS, type PlanId, TVA_RATE, calculateTTC } from '@/lib/products'
 import { createClient } from '@/lib/supabase/server'
 
 // Helper pour obtenir l'URL de base de l'application
@@ -18,7 +18,7 @@ function getBaseUrl() {
   return 'http://localhost:3000'
 }
 
-export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
+export async function createCheckoutSession(planId: PlanId, quantity: number = 1, baseUrl?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -29,6 +29,11 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
   const plan = PRODUCTS.find(p => p.id === planId)
   if (!plan) {
     throw new Error('Plan invalide')
+  }
+
+  // Valider la quantite
+  if (quantity < 1 || quantity > 100) {
+    throw new Error('Nombre de licences invalide (1-100)')
   }
   
   // Utiliser l'URL fournie par le client ou celle du serveur
@@ -60,6 +65,9 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
       .eq('user_id', user.id)
   }
 
+  // Calculer le prix TTC (HT + TVA)
+  const priceTTC = calculateTTC(plan.priceHT)
+
   // Creer la session de checkout
   const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
     customer: customerId,
@@ -68,17 +76,17 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
         price_data: {
           currency: 'eur',
           product_data: {
-            name: plan.name,
+            name: `${plan.name} - ${quantity} licence${quantity > 1 ? 's' : ''}`,
             description: plan.description,
           },
-          unit_amount: plan.priceInCents,
+          unit_amount: priceTTC, // Prix TTC
           ...(plan.mode === 'subscription' && plan.interval && {
             recurring: {
               interval: plan.interval,
             },
           }),
         },
-        quantity: 1,
+        quantity: quantity,
       },
     ],
     mode: plan.mode === 'subscription' ? 'subscription' : 'payment',
@@ -87,7 +95,19 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
     metadata: {
       user_id: user.id,
       plan_id: plan.id,
+      quantity: quantity.toString(),
     },
+    // Afficher les details de TVA
+    automatic_tax: { enabled: false },
+    invoice_creation: plan.mode === 'payment' ? {
+      enabled: true,
+      invoice_data: {
+        metadata: {
+          user_id: user.id,
+          plan_id: plan.id,
+        },
+      },
+    } : undefined,
   }
 
   // Ajouter l'essai gratuit de 14 jours si pas encore utilise et si c'est un abonnement
@@ -97,6 +117,7 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
       metadata: {
         user_id: user.id,
         plan_id: plan.id,
+        quantity: quantity.toString(),
       },
     }
   }

@@ -9,12 +9,13 @@ import { Spinner } from '@/components/ui/spinner'
 
 interface CheckoutButtonProps {
   planId: PlanId
+  quantity?: number
   children: React.ReactNode
   variant?: 'default' | 'outline' | 'secondary'
   className?: string
 }
 
-export function CheckoutButton({ planId, children, variant = 'default', className }: CheckoutButtonProps) {
+export function CheckoutButton({ planId, quantity = 1, children, variant = 'default', className }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -23,7 +24,7 @@ export function CheckoutButton({ planId, children, variant = 'default', classNam
     try {
       // Passer l'URL de base actuelle pour la redirection Stripe
       const baseUrl = window.location.origin
-      const { url } = await createCheckoutSession(planId, baseUrl)
+      const { url } = await createCheckoutSession(planId, quantity, baseUrl)
       if (url) {
         window.location.href = url
       }
