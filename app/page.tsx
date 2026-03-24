@@ -15,9 +15,15 @@ import {
   Zap,
   Crown,
   Smartphone,
-  Shield
+  Shield,
+  Mail,
+  BarChart3,
+  Package,
+  Receipt,
+  Truck,
+  FileCheck
 } from 'lucide-react'
-import { PRODUCTS } from '@/lib/products'
+import { PRODUCTS, TVA_RATE, calculateTTC, formatPrice } from '@/lib/products'
 import { cn } from '@/lib/utils'
 
 export default async function HomePage() {
@@ -30,29 +36,59 @@ export default async function HomePage() {
 
   const features = [
     {
-      icon: Users,
-      title: 'Gestion clients',
-      description: 'Enregistrez vos clients et retrouvez leur historique d\'interventions en un clic.',
+      icon: FileText,
+      title: 'Devis professionnels',
+      description: 'Creez des devis detailles avec votre catalogue produits et envoyez-les pour signature electronique.',
     },
     {
-      icon: ClipboardList,
-      title: 'Bons d\'intervention',
-      description: 'Creez des bons professionnels avec numerotation automatique.',
+      icon: Receipt,
+      title: 'Bons de commande',
+      description: 'Convertissez vos devis signes en bons de commande en un clic.',
+    },
+    {
+      icon: Truck,
+      title: 'Bons de livraison',
+      description: 'Generez automatiquement vos BL avec signature client a la reception.',
+    },
+    {
+      icon: FileCheck,
+      title: 'Factures',
+      description: 'Transformez vos documents en factures avec suivi des paiements et cachet "Paye".',
     },
     {
       icon: PenTool,
       title: 'Signature electronique',
-      description: 'Faites signer vos clients directement sur l\'ecran.',
+      description: 'Envoyez vos documents par email pour signature a distance ou faites signer sur place.',
     },
     {
-      icon: FileText,
-      title: 'Export PDF',
-      description: 'Telechargez vos bons signes au format PDF.',
+      icon: Mail,
+      title: 'Envoi par email',
+      description: 'Partagez le lien de signature par email, SMS ou WhatsApp directement depuis l\'app.',
+    },
+    {
+      icon: Package,
+      title: 'Catalogue produits',
+      description: 'Gerez votre catalogue de produits et prestations avec prix et TVA personnalises.',
+    },
+    {
+      icon: BarChart3,
+      title: 'Tableau de bord financier',
+      description: 'Suivez votre CA mensuel et annuel, analysez vos ventes par client et par type.',
+    },
+    {
+      icon: Users,
+      title: 'Gestion clients',
+      description: 'Centralisez vos clients avec leur historique complet et statistiques financieres.',
+    },
+    {
+      icon: ClipboardList,
+      title: 'Bons d\'intervention',
+      description: 'Creez des bons d\'intervention detailles pour vos prestations sur site.',
     },
     {
       icon: Smartphone,
       title: '100% Mobile',
-      description: 'Optimise pour tablette et smartphone sur le terrain.',
+      description: 'Application optimisee pour tablette et smartphone sur le terrain.',
     },
     {
       icon: Shield,
@@ -65,17 +101,17 @@ export default async function HomePage() {
     {
       name: 'Pierre D.',
       company: 'Plomberie Express',
-      text: 'InterSign Pro a revolutionne ma gestion administrative. Fini les bons papier perdus !',
+      text: 'InterSign Pro a revolutionne ma gestion administrative. La signature electronique par email est un vrai gain de temps !',
     },
     {
       name: 'Marie L.',
       company: 'Electricite Plus',
-      text: 'Mes clients sont impressionnes par le professionnalisme des bons signes numeriquement.',
+      text: 'La chaine devis-commande-livraison-facture est parfaitement fluide. Mes clients sont impressionnes.',
     },
     {
       name: 'Thomas R.',
       company: 'Services Informatiques',
-      text: 'Simple, efficace, et le support est excellent. Je recommande a 100%.',
+      text: 'Le tableau de bord financier me permet de suivre mon CA en temps reel. Indispensable !',
     },
   ]
 
@@ -129,18 +165,19 @@ export default async function HomePage() {
                 14 jours d&apos;essai gratuit
               </div>
               <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl text-balance">
-                Vos bons d&apos;intervention{' '}
+                Devis, commandes, livraisons et factures{' '}
                 <span className="text-primary">signes en quelques secondes</span>
               </h1>
               <p className="mt-6 text-lg text-muted-foreground text-pretty">
-                L&apos;application pour les professionnels qui se deplacent.
-                Creez, faites signer et archivez vos bons d&apos;intervention
-                directement depuis votre tablette ou smartphone.
+                La solution complete pour les professionnels : creez vos devis, 
+                envoyez-les pour signature electronique, et convertissez-les automatiquement 
+                en bons de commande, bons de livraison et factures. 
+                Suivez votre chiffre d&apos;affaires en temps reel.
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <Button asChild size="lg" className="w-full sm:w-auto">
                   <Link href="/auth/sign-up">
-                    Commencer gratuitement
+                    Commencer l&apos;essai gratuit
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
@@ -148,10 +185,37 @@ export default async function HomePage() {
                   <Link href="#features">Decouvrir les fonctionnalites</Link>
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-4">
-                Sans carte bancaire pour l&apos;essai
-              </p>
             </div>
+          </div>
+        </section>
+
+        {/* Document Flow */}
+        <section className="py-12 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8">
+              <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-lg border">
+                <FileText className="h-5 w-5 text-blue-500" />
+                <span className="font-medium">Devis</span>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
+              <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-lg border">
+                <Receipt className="h-5 w-5 text-amber-500" />
+                <span className="font-medium">Commande</span>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
+              <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-lg border">
+                <Truck className="h-5 w-5 text-cyan-500" />
+                <span className="font-medium">Livraison</span>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
+              <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-lg border">
+                <FileCheck className="h-5 w-5 text-green-500" />
+                <span className="font-medium">Facture</span>
+              </div>
+            </div>
+            <p className="text-center text-muted-foreground mt-4">
+              Conversion automatique entre chaque etape avec signature electronique
+            </p>
           </div>
         </section>
 
@@ -159,12 +223,12 @@ export default async function HomePage() {
         <section id="features" className="py-16 md:py-24">
           <div className="container mx-auto px-4">
             <h2 className="text-center text-2xl font-bold text-foreground md:text-3xl mb-4">
-              Tout ce dont vous avez besoin
+              Une solution complete pour votre activite
             </h2>
             <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-12">
-              Une solution complete pour digitaliser vos interventions terrain.
+              De la creation du devis jusqu&apos;a l&apos;encaissement, gerez tout votre cycle commercial en un seul outil.
             </p>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {features.map((feature, index) => (
                 <div key={index} className="flex flex-col items-center text-center p-6 rounded-xl bg-card border hover:shadow-md transition-shadow">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -178,83 +242,157 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* Dashboard Preview */}
+        <section className="py-16 md:py-24 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-center text-2xl font-bold text-foreground md:text-3xl mb-4">
+                Tableau de bord financier complet
+              </h2>
+              <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-12">
+                Suivez en temps reel votre activite commerciale et votre chiffre d&apos;affaires.
+              </p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">CA Mensuel</p>
+                      <p className="text-2xl font-bold text-primary">Temps reel</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">CA Annuel</p>
+                      <p className="text-2xl font-bold text-primary">Temps reel</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Devis signes</p>
+                      <p className="text-2xl font-bold text-blue-500">Suivi</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Factures encaissees</p>
+                      <p className="text-2xl font-bold text-green-500">Suivi</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="mt-8 grid md:grid-cols-3 gap-4">
+                <div className="bg-card border rounded-lg p-4 text-center">
+                  <p className="font-medium">Analyse par client</p>
+                  <p className="text-sm text-muted-foreground">CA, materiel vs prestations</p>
+                </div>
+                <div className="bg-card border rounded-lg p-4 text-center">
+                  <p className="font-medium">Suivi des documents</p>
+                  <p className="text-sm text-muted-foreground">Devis, commandes, factures</p>
+                </div>
+                <div className="bg-card border rounded-lg p-4 text-center">
+                  <p className="font-medium">Historique complet</p>
+                  <p className="text-sm text-muted-foreground">Par dossier client</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Pricing */}
-        <section id="pricing" className="py-16 md:py-24 bg-muted/30">
+        <section id="pricing" className="py-16 md:py-24">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-2xl font-bold text-foreground md:text-3xl mb-4">
                 Tarifs simples et transparents
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Choisissez la formule adaptee a votre activite. Essai gratuit de 14 jours inclus.
+                Prix affiches HT - TVA {TVA_RATE}% applicable. Essai gratuit de 14 jours inclus pour les abonnements.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Chaque licence correspond a 1 utilisateur. Selectionnez le nombre de licences selon vos besoins.
               </p>
             </div>
             <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {PRODUCTS.map((product) => (
-                <Card 
-                  key={product.id} 
-                  className={cn(
-                    'relative flex flex-col',
-                    product.popular && 'border-primary shadow-lg md:scale-105'
-                  )}
-                >
-                  {product.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
-                        Recommande
-                      </span>
-                    </div>
-                  )}
-                  <CardHeader className="text-center pb-4">
-                    <div className={cn(
-                      'mx-auto mb-4 p-3 rounded-full',
-                      product.popular ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                    )}>
-                      {getPlanIcon(product.id)}
-                    </div>
-                    <CardTitle className="text-xl">{product.name}</CardTitle>
-                    <CardDescription>{product.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <div className="text-center mb-6">
-                      <span className="text-4xl font-bold text-foreground">
-                        {product.priceDisplay}
-                      </span>
-                      <span className="text-muted-foreground">{product.period}</span>
-                    </div>
-                    {product.mode === 'subscription' && (
-                      <p className="text-center text-sm text-accent font-medium mb-4">
-                        14 jours d&apos;essai gratuit
-                      </p>
+              {PRODUCTS.map((product) => {
+                const priceTTC = calculateTTC(product.priceHT)
+                return (
+                  <Card 
+                    key={product.id} 
+                    className={cn(
+                      'relative flex flex-col',
+                      product.popular && 'border-primary shadow-lg md:scale-105'
                     )}
-                    <ul className="space-y-3">
-                      {product.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                          <span className="text-sm text-foreground">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      variant={product.popular ? 'default' : 'outline'}
-                      className="w-full"
-                      asChild
-                    >
-                      <Link href={`/auth/sign-up?plan=${product.id}`}>
-                        {product.mode === 'subscription' ? 'Essayer gratuitement' : 'Choisir'}
-                      </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
+                  >
+                    {product.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
+                          Recommande
+                        </span>
+                      </div>
+                    )}
+                    <CardHeader className="text-center pb-4">
+                      <div className={cn(
+                        'mx-auto mb-4 p-3 rounded-full',
+                        product.popular ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                      )}>
+                        {getPlanIcon(product.id)}
+                      </div>
+                      <CardTitle className="text-xl">{product.name}</CardTitle>
+                      <CardDescription>{product.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                      <div className="text-center mb-4">
+                        <span className="text-4xl font-bold text-foreground">
+                          {product.priceDisplay}
+                        </span>
+                        <span className="text-muted-foreground">{product.period}</span>
+                      </div>
+                      <p className="text-center text-xs text-muted-foreground mb-6">
+                        soit {formatPrice(priceTTC)} TTC{product.mode === 'subscription' ? (product.interval === 'month' ? '/mois' : '/an') : ''}
+                      </p>
+                      {product.mode === 'subscription' && (
+                        <p className="text-center text-sm text-accent font-medium mb-4">
+                          14 jours d&apos;essai gratuit
+                        </p>
+                      )}
+                      <ul className="space-y-3">
+                        {product.features.map((feature, index) => (
+                          <li key={index} className="flex items-start gap-3">
+                            <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                            <span className="text-sm text-foreground">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                    <CardFooter>
+                      <Button 
+                        variant={product.popular ? 'default' : 'outline'}
+                        className="w-full"
+                        asChild
+                      >
+                        <Link href={`/auth/sign-up?plan=${product.id}`}>
+                          {product.mode === 'subscription' ? 'Commencer l\'essai' : 'Choisir cette offre'}
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                )
+              })}
             </div>
+            <p className="text-center text-sm text-muted-foreground mt-8">
+              Besoin de plusieurs licences ? Contactez-nous pour un devis personnalise.
+            </p>
           </div>
         </section>
 
         {/* Testimonials */}
-        <section id="testimonials" className="py-16 md:py-24">
+        <section id="testimonials" className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-2xl font-bold text-foreground md:text-3xl mb-4">
@@ -289,11 +427,11 @@ export default async function HomePage() {
         <section className="py-16 md:py-24 bg-primary text-primary-foreground">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-2xl font-bold md:text-3xl mb-4 text-balance">
-              Pret a digitaliser vos interventions ?
+              Pret a simplifier votre gestion commerciale ?
             </h2>
             <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto text-pretty">
               Commencez votre essai gratuit de 14 jours aujourd&apos;hui.
-              Aucune carte bancaire requise.
+              Devis, commandes, livraisons et factures en quelques clics.
             </p>
             <Button size="lg" variant="secondary" asChild>
               <Link href="/auth/sign-up">

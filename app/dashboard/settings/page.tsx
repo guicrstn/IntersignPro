@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Save, Building2, Upload, ImageIcon, X } from 'lucide-react'
 import type { Company } from '@/lib/types'
 import Image from 'next/image'
+import { ChorusProSettings } from '@/components/chorus-pro-settings'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -153,7 +154,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Configurez les informations de votre societe</p>
       </div>
 
-      <div className="grid gap-6 max-w-2xl">
+      <div className="grid gap-6 max-w-3xl">
         {/* Company Info */}
         <Card>
           <CardHeader>
@@ -328,6 +329,9 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Chorus Pro Integration */}
+        <ChorusProSettings />
       </div>
     </div>
   )

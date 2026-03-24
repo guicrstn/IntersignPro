@@ -26,6 +26,7 @@ import { DocumentConvert } from '@/components/document-convert'
 import { DocumentPDF } from '@/components/document-pdf'
 import { DocumentDeleteButton } from '@/components/document-delete-button'
 import { DocumentSendSignature } from '@/components/document-send-signature'
+import { DocumentAuditHistory } from '@/components/document-audit-history'
 
 const statusColors: Record<DocumentStatus, string> = {
   draft: 'bg-gray-100 text-gray-700',
@@ -152,6 +153,7 @@ export default async function DocumentDetailPage({
             />
           )}
           <DocumentPDF documentId={id} documentNumber={doc.document_number} />
+          <DocumentAuditHistory documentId={id} documentNumber={doc.document_number} />
           <DocumentDeleteButton
             documentId={id}
             documentNumber={doc.document_number}

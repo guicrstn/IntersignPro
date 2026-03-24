@@ -1,7 +1,7 @@
 'use server'
 
 import { stripe } from '@/lib/stripe'
-import { PRODUCTS, type PlanId } from '@/lib/products'
+import { PRODUCTS, type PlanId, TVA_RATE, calculateTTC } from '@/lib/products'
 import { createClient } from '@/lib/supabase/server'
 
 // Helper pour obtenir l'URL de base de l'application
@@ -18,7 +18,7 @@ function getBaseUrl() {
   return 'http://localhost:3000'
 }
 
-export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
+export async function createCheckoutSession(planId: PlanId, quantity: number = 1, baseUrl?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -30,9 +30,14 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
   if (!plan) {
     throw new Error('Plan invalide')
   }
-  
-  // Utiliser l'URL fournie par le client ou celle du serveur
-  const appUrl = baseUrl || getBaseUrl()
+
+  // Forcer la conversion en entier - protege contre toute valeur non numerique
+  const rawQty = parseInt(String(quantity), 10)
+  const safeQuantity = isNaN(rawQty) ? 1 : Math.max(1, Math.min(10, rawQty))
+
+  // Valider que l'URL est bien une URL et pas une quantite mal passee
+  const isValidUrl = (val: unknown) => typeof val === 'string' && val.startsWith('http')
+  const appUrl = isValidUrl(baseUrl) ? baseUrl as string : getBaseUrl()
 
   // Verifier si l'utilisateur a deja utilise son essai gratuit
   const { data: company } = await supabase
@@ -60,6 +65,9 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
       .eq('user_id', user.id)
   }
 
+  // Calculer le prix TTC (HT + TVA)
+  const priceTTC = calculateTTC(plan.priceHT)
+
   // Creer la session de checkout
   const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
     customer: customerId,
@@ -68,17 +76,17 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
         price_data: {
           currency: 'eur',
           product_data: {
-            name: plan.name,
+            name: `${plan.name} - ${safeQuantity} licence${safeQuantity > 1 ? 's' : ''}`,
             description: plan.description,
           },
-          unit_amount: plan.priceInCents,
+          unit_amount: priceTTC,
           ...(plan.mode === 'subscription' && plan.interval && {
             recurring: {
               interval: plan.interval,
             },
           }),
         },
-        quantity: 1,
+        quantity: safeQuantity,
       },
     ],
     mode: plan.mode === 'subscription' ? 'subscription' : 'payment',
@@ -87,7 +95,19 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
     metadata: {
       user_id: user.id,
       plan_id: plan.id,
+      quantity: safeQuantity.toString(),
     },
+    // Afficher les details de TVA
+    automatic_tax: { enabled: false },
+    invoice_creation: plan.mode === 'payment' ? {
+      enabled: true,
+      invoice_data: {
+        metadata: {
+          user_id: user.id,
+          plan_id: plan.id,
+        },
+      },
+    } : undefined,
   }
 
   // Ajouter l'essai gratuit de 14 jours si pas encore utilise et si c'est un abonnement
@@ -97,6 +117,7 @@ export async function createCheckoutSession(planId: PlanId, baseUrl?: string) {
       metadata: {
         user_id: user.id,
         plan_id: plan.id,
+        quantity: safeQuantity.toString(),
       },
     }
   }
