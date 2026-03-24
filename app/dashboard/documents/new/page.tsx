@@ -49,7 +49,9 @@ interface LineItem {
   unit: string
   unit_price_ht: number
   tva_rate: number
+  discount_type: 'percent' | 'amount'
   discount_percent: number
+  discount_amount: number
 }
 
 function generateTempId() {
@@ -86,13 +88,15 @@ function NewDocumentContent() {
       id: generateTempId(),
       line_type: 'service',
       reference: '',
-      description: '',
-      quantity: 1,
-      unit: 'unite',
-      unit_price_ht: 0,
-      tva_rate: 20,
-      discount_percent: 0,
-    }
+description: '',
+  quantity: 1,
+  unit: 'unite',
+  unit_price_ht: 0,
+  tva_rate: 20,
+  discount_type: 'percent' as const,
+  discount_percent: 0,
+  discount_amount: 0,
+  }
   ])
 
   useEffect(() => {
@@ -128,11 +132,17 @@ function NewDocumentContent() {
   // Calculate totals
   const calculateLineTotals = (line: LineItem) => {
     const subtotal = line.quantity * line.unit_price_ht
-    const discountAmount = subtotal * (line.discount_percent / 100)
-    const totalHT = subtotal - discountAmount
+    // Calculate discount based on type
+    let discountAmount = 0
+    if (line.discount_type === 'percent') {
+      discountAmount = subtotal * ((line.discount_percent || 0) / 100)
+    } else {
+      discountAmount = line.discount_amount || 0
+    }
+    const totalHT = Math.max(0, subtotal - discountAmount)
     const totalTVA = totalHT * (line.tva_rate / 100)
     const totalTTC = totalHT + totalTVA
-    return { totalHT, totalTVA, totalTTC }
+    return { totalHT, totalTVA, totalTTC, discountAmount }
   }
 
   const totals = lines.reduce(
@@ -159,7 +169,9 @@ function NewDocumentContent() {
         unit: 'unite',
         unit_price_ht: 0,
         tva_rate: 20,
+        discount_type: 'percent' as const,
         discount_percent: 0,
+        discount_amount: 0,
       }
     ])
   }
@@ -263,20 +275,20 @@ function NewDocumentContent() {
       return
     }
 
-    // Add lines
-    const linesToInsert = lines.map((line, index) => ({
-      document_id: document.id,
-      line_order: index,
-      line_type: line.line_type,
-      reference: line.reference || null,
-      description: line.description,
-      quantity: line.quantity,
-      unit: line.unit,
-      unit_price_ht: line.unit_price_ht,
-      tva_rate: line.tva_rate,
-      discount_percent: line.discount_percent,
-      discount_amount: 0,
-    }))
+// Add lines
+      const linesToInsert = lines.map((line, index) => ({
+        document_id: document.id,
+        line_order: index,
+        line_type: line.line_type,
+        reference: line.reference || null,
+        description: line.description,
+        quantity: line.quantity,
+        unit: line.unit,
+        unit_price_ht: line.unit_price_ht,
+        tva_rate: line.tva_rate,
+        discount_percent: line.discount_type === 'percent' ? (line.discount_percent || 0) : 0,
+        discount_amount: line.discount_type === 'amount' ? (line.discount_amount || 0) : 0,
+      }))
 
     const { error: linesError } = await supabase
       .from('document_lines')
@@ -533,15 +545,39 @@ function NewDocumentContent() {
                         </Select>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Remise %</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          value={line.discount_percent ?? 0}
-                          onChange={(e) => handleLineChange(line.id, 'discount_percent', parseFloat(e.target.value) || 0)}
-                        />
+                        <Label>Remise</Label>
+                        <div className="flex gap-2">
+                          <Select
+                            value={line.discount_type || 'percent'}
+                            onValueChange={(value) => handleLineChange(line.id, 'discount_type', value)}
+                          >
+                            <SelectTrigger className="w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="percent">%</SelectItem>
+                              <SelectItem value="amount">EUR</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            min="0"
+                            max={line.discount_type === 'percent' ? 100 : undefined}
+                            step="0.01"
+                            value={line.discount_type === 'percent' ? (line.discount_percent ?? 0) : (line.discount_amount ?? 0)}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0
+                              if (line.discount_type === 'percent') {
+                                handleLineChange(line.id, 'discount_percent', val)
+                                handleLineChange(line.id, 'discount_amount', 0)
+                              } else {
+                                handleLineChange(line.id, 'discount_amount', val)
+                                handleLineChange(line.id, 'discount_percent', 0)
+                              }
+                            }}
+                            className="flex-1"
+                          />
+                        </div>
                       </div>
                     </div>
                     <div className="flex justify-end gap-4 text-sm">
