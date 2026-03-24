@@ -1,4 +1,6 @@
 {
+  "common.login": "Entrar",
+  "common.freeTrial": "Teste gratis",
   "common.save": "Salvar",
   "common.cancel": "Cancelar",
   "common.delete": "Excluir",
@@ -159,5 +161,28 @@
   "errors.maxLength": "Maximo {{max}} caracteres",
   "errors.generic": "Ocorreu um erro",
   "errors.notFound": "Nao encontrado",
-  "errors.unauthorized": "Nao autorizado"
+  "errors.unauthorized": "Nao autorizado",
+  
+  "landing.nav.features": "Funcionalidades",
+  "landing.nav.pricing": "Precos",
+  "landing.nav.testimonials": "Depoimentos",
+  "landing.hero.title": "Simplifique a gestao dos seus documentos profissionais",
+  "landing.hero.subtitle": "Orcamentos, pedidos, notas de entrega e faturas com assinatura eletronica. Tudo em um para profissionais.",
+  "landing.hero.cta": "Comecar gratis",
+  "landing.features.title": "Funcionalidades",
+  "landing.features.documents": "Gestao completa de documentos",
+  "landing.features.documentsDesc": "Crie e gerencie seus orcamentos, pedidos, notas e faturas em poucos cliques.",
+  "landing.features.signature": "Assinatura eletronica",
+  "landing.features.signatureDesc": "Faca seus documentos serem assinados a distancia por email ou link seguro.",
+  "landing.features.dashboard": "Painel financeiro",
+  "landing.features.dashboardDesc": "Acompanhe seu faturamento mensal e anual em tempo real.",
+  "landing.features.catalog": "Catalogo de produtos/servicos",
+  "landing.features.catalogDesc": "Gerencie seu catalogo e insira rapidamente seus itens.",
+  "landing.features.multilang": "Multi-idioma",
+  "landing.features.multilangDesc": "Interface disponivel em 6 idiomas para trabalhar internacionalmente.",
+  "landing.features.security": "Seguranca avancada",
+  "landing.features.securityDesc": "Autenticacao 2FA e trilha de auditoria completa para seus documentos.",
+  "landing.pricing.title": "Precos simples e transparentes",
+  "landing.pricing.perLicense": "por licenca / usuario",
+  "landing.testimonials.title": "O que nossos clientes dizem"
 }

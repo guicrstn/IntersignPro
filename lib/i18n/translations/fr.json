@@ -1,4 +1,6 @@
 {
+  "common.login": "Connexion",
+  "common.freeTrial": "Essai gratuit",
   "common.save": "Enregistrer",
   "common.cancel": "Annuler",
   "common.delete": "Supprimer",
@@ -159,5 +161,28 @@
   "errors.maxLength": "Maximum {{max}} caracteres",
   "errors.generic": "Une erreur est survenue",
   "errors.notFound": "Non trouve",
-  "errors.unauthorized": "Non autorise"
+  "errors.unauthorized": "Non autorise",
+  
+  "landing.nav.features": "Fonctionnalites",
+  "landing.nav.pricing": "Tarifs",
+  "landing.nav.testimonials": "Temoignages",
+  "landing.hero.title": "Simplifiez la gestion de vos documents professionnels",
+  "landing.hero.subtitle": "Devis, commandes, bons de livraison et factures avec signature electronique. Tout-en-un pour les professionnels.",
+  "landing.hero.cta": "Commencer gratuitement",
+  "landing.features.title": "Fonctionnalites",
+  "landing.features.documents": "Gestion complete des documents",
+  "landing.features.documentsDesc": "Creez et gerez vos devis, commandes, bons de livraison et factures en quelques clics.",
+  "landing.features.signature": "Signature electronique",
+  "landing.features.signatureDesc": "Faites signer vos documents a distance par email ou lien securise.",
+  "landing.features.dashboard": "Tableau de bord financier",
+  "landing.features.dashboardDesc": "Suivez votre chiffre d'affaires mensuel et annuel en temps reel.",
+  "landing.features.catalog": "Catalogue produits/services",
+  "landing.features.catalogDesc": "Gerez votre catalogue et inserez rapidement vos articles.",
+  "landing.features.multilang": "Multi-langues",
+  "landing.features.multilangDesc": "Interface disponible en 6 langues pour travailler a l'international.",
+  "landing.features.security": "Securite renforcee",
+  "landing.features.securityDesc": "Authentification 2FA et piste d'audit complete pour vos documents.",
+  "landing.pricing.title": "Tarifs simples et transparents",
+  "landing.pricing.perLicense": "par licence / utilisateur",
+  "landing.testimonials.title": "Ce que disent nos clients"
 }

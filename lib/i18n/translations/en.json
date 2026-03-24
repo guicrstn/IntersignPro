@@ -1,4 +1,6 @@
 {
+  "common.login": "Login",
+  "common.freeTrial": "Free trial",
   "common.save": "Save",
   "common.cancel": "Cancel",
   "common.delete": "Delete",
@@ -159,5 +161,28 @@
   "errors.maxLength": "Maximum {{max}} characters",
   "errors.generic": "An error occurred",
   "errors.notFound": "Not found",
-  "errors.unauthorized": "Unauthorized"
+  "errors.unauthorized": "Unauthorized",
+  
+  "landing.nav.features": "Features",
+  "landing.nav.pricing": "Pricing",
+  "landing.nav.testimonials": "Testimonials",
+  "landing.hero.title": "Simplify your professional document management",
+  "landing.hero.subtitle": "Quotes, orders, delivery notes and invoices with electronic signature. All-in-one for professionals.",
+  "landing.hero.cta": "Start for free",
+  "landing.features.title": "Features",
+  "landing.features.documents": "Complete document management",
+  "landing.features.documentsDesc": "Create and manage your quotes, orders, delivery notes and invoices in a few clicks.",
+  "landing.features.signature": "Electronic signature",
+  "landing.features.signatureDesc": "Have your documents signed remotely by email or secure link.",
+  "landing.features.dashboard": "Financial dashboard",
+  "landing.features.dashboardDesc": "Track your monthly and yearly revenue in real time.",
+  "landing.features.catalog": "Product/service catalog",
+  "landing.features.catalogDesc": "Manage your catalog and quickly insert your items.",
+  "landing.features.multilang": "Multi-language",
+  "landing.features.multilangDesc": "Interface available in 6 languages to work internationally.",
+  "landing.features.security": "Enhanced security",
+  "landing.features.securityDesc": "2FA authentication and complete audit trail for your documents.",
+  "landing.pricing.title": "Simple and transparent pricing",
+  "landing.pricing.perLicense": "per license / user",
+  "landing.testimonials.title": "What our customers say"
 }

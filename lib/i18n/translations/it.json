@@ -1,4 +1,6 @@
 {
+  "common.login": "Accedi",
+  "common.freeTrial": "Prova gratuita",
   "common.save": "Salva",
   "common.cancel": "Annulla",
   "common.delete": "Elimina",
@@ -159,5 +161,28 @@
   "errors.maxLength": "Massimo {{max}} caratteri",
   "errors.generic": "Si e verificato un errore",
   "errors.notFound": "Non trovato",
-  "errors.unauthorized": "Non autorizzato"
+  "errors.unauthorized": "Non autorizzato",
+  
+  "landing.nav.features": "Funzionalita",
+  "landing.nav.pricing": "Prezzi",
+  "landing.nav.testimonials": "Testimonianze",
+  "landing.hero.title": "Semplifica la gestione dei tuoi documenti professionali",
+  "landing.hero.subtitle": "Preventivi, ordini, bolle di consegna e fatture con firma elettronica. Tutto in uno per i professionisti.",
+  "landing.hero.cta": "Inizia gratis",
+  "landing.features.title": "Funzionalita",
+  "landing.features.documents": "Gestione completa dei documenti",
+  "landing.features.documentsDesc": "Crea e gestisci preventivi, ordini, bolle e fatture in pochi clic.",
+  "landing.features.signature": "Firma elettronica",
+  "landing.features.signatureDesc": "Fai firmare i tuoi documenti a distanza via email o link sicuro.",
+  "landing.features.dashboard": "Dashboard finanziaria",
+  "landing.features.dashboardDesc": "Monitora il tuo fatturato mensile e annuale in tempo reale.",
+  "landing.features.catalog": "Catalogo prodotti/servizi",
+  "landing.features.catalogDesc": "Gestisci il tuo catalogo e inserisci rapidamente i tuoi articoli.",
+  "landing.features.multilang": "Multi-lingua",
+  "landing.features.multilangDesc": "Interfaccia disponibile in 6 lingue per lavorare a livello internazionale.",
+  "landing.features.security": "Sicurezza avanzata",
+  "landing.features.securityDesc": "Autenticazione 2FA e traccia di audit completa per i tuoi documenti.",
+  "landing.pricing.title": "Prezzi semplici e trasparenti",
+  "landing.pricing.perLicense": "per licenza / utente",
+  "landing.testimonials.title": "Cosa dicono i nostri clienti"
 }

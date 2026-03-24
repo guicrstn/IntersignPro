@@ -1,4 +1,6 @@
 {
+  "common.login": "Iniciar sesion",
+  "common.freeTrial": "Prueba gratis",
   "common.save": "Guardar",
   "common.cancel": "Cancelar",
   "common.delete": "Eliminar",
@@ -159,5 +161,28 @@
   "errors.maxLength": "Maximo {{max}} caracteres",
   "errors.generic": "Se produjo un error",
   "errors.notFound": "No encontrado",
-  "errors.unauthorized": "No autorizado"
+  "errors.unauthorized": "No autorizado",
+  
+  "landing.nav.features": "Funcionalidades",
+  "landing.nav.pricing": "Precios",
+  "landing.nav.testimonials": "Testimonios",
+  "landing.hero.title": "Simplifica la gestion de tus documentos profesionales",
+  "landing.hero.subtitle": "Presupuestos, pedidos, albaranes y facturas con firma electronica. Todo en uno para profesionales.",
+  "landing.hero.cta": "Empezar gratis",
+  "landing.features.title": "Funcionalidades",
+  "landing.features.documents": "Gestion completa de documentos",
+  "landing.features.documentsDesc": "Crea y gestiona tus presupuestos, pedidos, albaranes y facturas en pocos clics.",
+  "landing.features.signature": "Firma electronica",
+  "landing.features.signatureDesc": "Haz firmar tus documentos a distancia por correo o enlace seguro.",
+  "landing.features.dashboard": "Panel financiero",
+  "landing.features.dashboardDesc": "Sigue tu facturacion mensual y anual en tiempo real.",
+  "landing.features.catalog": "Catalogo productos/servicios",
+  "landing.features.catalogDesc": "Gestiona tu catalogo e inserta rapidamente tus articulos.",
+  "landing.features.multilang": "Multi-idioma",
+  "landing.features.multilangDesc": "Interfaz disponible en 6 idiomas para trabajar internacionalmente.",
+  "landing.features.security": "Seguridad reforzada",
+  "landing.features.securityDesc": "Autenticacion 2FA y pista de auditoria completa para tus documentos.",
+  "landing.pricing.title": "Precios simples y transparentes",
+  "landing.pricing.perLicense": "por licencia / usuario",
+  "landing.testimonials.title": "Lo que dicen nuestros clientes"
 }
