@@ -1,4 +1,6 @@
 {
+  "common.login": "Anmelden",
+  "common.freeTrial": "Kostenlos testen",
   "common.save": "Speichern",
   "common.cancel": "Abbrechen",
   "common.delete": "Loschen",
@@ -159,5 +161,28 @@
   "errors.maxLength": "Maximal {{max}} Zeichen",
   "errors.generic": "Ein Fehler ist aufgetreten",
   "errors.notFound": "Nicht gefunden",
-  "errors.unauthorized": "Nicht autorisiert"
+  "errors.unauthorized": "Nicht autorisiert",
+  
+  "landing.nav.features": "Funktionen",
+  "landing.nav.pricing": "Preise",
+  "landing.nav.testimonials": "Referenzen",
+  "landing.hero.title": "Vereinfachen Sie Ihre professionelle Dokumentenverwaltung",
+  "landing.hero.subtitle": "Angebote, Bestellungen, Lieferscheine und Rechnungen mit elektronischer Unterschrift. Alles in einem fur Profis.",
+  "landing.hero.cta": "Kostenlos starten",
+  "landing.features.title": "Funktionen",
+  "landing.features.documents": "Vollstandige Dokumentenverwaltung",
+  "landing.features.documentsDesc": "Erstellen und verwalten Sie Ihre Angebote, Bestellungen, Lieferscheine und Rechnungen mit wenigen Klicks.",
+  "landing.features.signature": "Elektronische Unterschrift",
+  "landing.features.signatureDesc": "Lassen Sie Ihre Dokumente per E-Mail oder sicherem Link unterschreiben.",
+  "landing.features.dashboard": "Finanz-Dashboard",
+  "landing.features.dashboardDesc": "Verfolgen Sie Ihren monatlichen und jahrlichen Umsatz in Echtzeit.",
+  "landing.features.catalog": "Produkt-/Dienstleistungskatalog",
+  "landing.features.catalogDesc": "Verwalten Sie Ihren Katalog und fugen Sie schnell Ihre Artikel ein.",
+  "landing.features.multilang": "Mehrsprachig",
+  "landing.features.multilangDesc": "Oberflache in 6 Sprachen verfugbar fur internationale Arbeit.",
+  "landing.features.security": "Erweiterte Sicherheit",
+  "landing.features.securityDesc": "2FA-Authentifizierung und vollstandige Audit-Trail fur Ihre Dokumente.",
+  "landing.pricing.title": "Einfache und transparente Preise",
+  "landing.pricing.perLicense": "pro Lizenz / Benutzer",
+  "landing.testimonials.title": "Was unsere Kunden sagen"
 }
