@@ -11,6 +11,7 @@ import { Save, Building2, Upload, ImageIcon, X } from 'lucide-react'
 import type { Company } from '@/lib/types'
 import Image from 'next/image'
 import { ChorusProSettings } from '@/components/chorus-pro-settings'
+import { TwoFactorSettings } from '@/components/two-factor-settings'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -329,6 +330,9 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Two-Factor Authentication */}
+        <TwoFactorSettings />
 
         {/* Chorus Pro Integration */}
         <ChorusProSettings />
