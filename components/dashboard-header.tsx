@@ -32,6 +32,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import type { User } from '@supabase/supabase-js'
 import Image from 'next/image'
+import { LanguageSelector } from '@/components/language-selector'
 
 interface DashboardHeaderProps {
   user: User
@@ -121,10 +122,15 @@ export function DashboardHeader({ user, companyName, logoUrl }: DashboardHeaderP
       </div>
 
       {/* Spacer for desktop */}
-      <div className="hidden lg:block" />
+      <div className="hidden lg:block flex-1" />
 
-      {/* User Menu */}
-      <DropdownMenu>
+      {/* Right side actions */}
+      <div className="flex items-center gap-2">
+        {/* Language Selector */}
+        <LanguageSelector variant="compact" />
+
+        {/* User Menu */}
+        <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="gap-2">
             {logoUrl ? (
@@ -161,7 +167,8 @@ export function DashboardHeader({ user, companyName, logoUrl }: DashboardHeaderP
             Deconnexion
           </DropdownMenuItem>
         </DropdownMenuContent>
-      </DropdownMenu>
+        </DropdownMenu>
+      </div>
     </header>
   )
 }
