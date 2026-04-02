@@ -79,12 +79,13 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-svh bg-background">
-      <DashboardSidebar user={user} companyName={company?.name || 'Ma Societe'} />
+      <DashboardSidebar user={user} companyName={company?.name || 'Ma Societe'} isAdmin={company?.is_admin || false} />
       <div className="flex flex-1 flex-col">
         <DashboardHeader 
           user={user} 
           companyName={company?.name || 'Ma Societe'} 
           logoUrl={company?.logo_url ? `/api/logo?pathname=${encodeURIComponent(company.logo_url)}` : null}
+          isAdmin={company?.is_admin || false}
         />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           {children}

@@ -21,21 +21,25 @@ import type { User } from '@supabase/supabase-js'
 interface DashboardSidebarProps {
   user: User
   companyName: string
+  isAdmin?: boolean
 }
 
 const navigation = [
-  { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Clients', href: '/dashboard/clients', icon: Users },
-  { name: 'Documents', href: '/dashboard/documents', icon: FileText },
-  { name: 'Catalogue', href: '/dashboard/catalog', icon: Package },
-  { name: 'Interventions', href: '/dashboard/interventions', icon: ClipboardList },
-  { name: 'Abonnement', href: '/dashboard/subscription', icon: CreditCard },
-  { name: 'Cles API', href: '/dashboard/api-keys', icon: Key },
-  { name: 'Parametres', href: '/dashboard/settings', icon: Settings },
+  { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard, adminOnly: false },
+  { name: 'Clients', href: '/dashboard/clients', icon: Users, adminOnly: false },
+  { name: 'Documents', href: '/dashboard/documents', icon: FileText, adminOnly: false },
+  { name: 'Catalogue', href: '/dashboard/catalog', icon: Package, adminOnly: false },
+  { name: 'Interventions', href: '/dashboard/interventions', icon: ClipboardList, adminOnly: false },
+  { name: 'Abonnement', href: '/dashboard/subscription', icon: CreditCard, adminOnly: true },
+  { name: 'Cles API', href: '/dashboard/api-keys', icon: Key, adminOnly: true },
+  { name: 'Parametres', href: '/dashboard/settings', icon: Settings, adminOnly: false },
 ]
 
-export function DashboardSidebar({ companyName }: DashboardSidebarProps) {
+export function DashboardSidebar({ companyName, isAdmin = false }: DashboardSidebarProps) {
   const pathname = usePathname()
+
+  // Filter navigation items based on user role
+  const filteredNavigation = navigation.filter(item => !item.adminOnly || isAdmin)
 
   return (
     <aside className="hidden w-64 flex-col bg-sidebar text-sidebar-foreground lg:flex">
@@ -64,7 +68,7 @@ export function DashboardSidebar({ companyName }: DashboardSidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-4">
         <ul className="space-y-1">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const isActive = pathname === item.href || 
               (item.href !== '/dashboard' && pathname.startsWith(item.href))
             return (
