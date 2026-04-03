@@ -11,6 +11,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { ArrowRight, Loader2, ShoppingCart, Truck, Receipt } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { DocumentType } from '@/lib/types'
@@ -34,8 +36,10 @@ export function DocumentConvert({ documentId, currentType, nextType }: DocumentC
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hidePrices, setHidePrices] = useState(false)
 
   const targetConfig = conversionConfig[nextType]
+  const isConvertingToLivraison = nextType === 'livraison'
 
   const handleConvert = async () => {
     setIsLoading(true)
@@ -115,6 +119,7 @@ export function DocumentConvert({ documentId, currentType, nextType }: DocumentC
         subject: originalDoc.subject,
         notes: originalDoc.notes,
         terms: originalDoc.terms,
+        hide_prices: isConvertingToLivraison ? hidePrices : false,
       })
       .select()
       .single()
@@ -195,6 +200,19 @@ export function DocumentConvert({ documentId, currentType, nextType }: DocumentC
           <p className="text-sm text-muted-foreground">
             Le {DOCUMENT_TYPE_LABELS[currentType]} sera marque comme converti et un nouveau document sera cree avec les memes lignes.
           </p>
+
+          {isConvertingToLivraison && (
+            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg border">
+              <Checkbox
+                id="hide-prices"
+                checked={hidePrices}
+                onCheckedChange={(checked) => setHidePrices(checked as boolean)}
+              />
+              <Label htmlFor="hide-prices" className="text-sm font-normal cursor-pointer">
+                Masquer les prix sur ce bon de livraison
+              </Label>
+            </div>
+          )}
 
           <Button
             className="w-full"
