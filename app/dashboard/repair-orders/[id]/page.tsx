@@ -181,21 +181,28 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
     setConverting(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user || !repairOrder) return
+      if (!user || !repairOrder) {
+        console.log("[v0] Missing user or repairOrder", { user, repairOrder })
+        return
+      }
+
+      console.log("[v0] Starting conversion for user:", user.id)
 
       // Get user's default company
-      const { data: userCompany } = await supabase
+      const { data: userCompany, error: companyError } = await supabase
         .from('user_companies')
         .select('company_id')
         .eq('user_id', user.id)
         .eq('is_default', true)
         .single()
 
+      console.log("[v0] User company result:", { userCompany, companyError })
+
       const companyId = userCompany?.company_id || null
 
       // Generate BL number
       const year = new Date().getFullYear()
-      const { data: sequence } = await supabase
+      const { data: sequence, error: seqError } = await supabase
         .from('document_sequences')
         .select('current_number')
         .eq('user_id', user.id)
@@ -203,44 +210,60 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
         .eq('year', year)
         .single()
 
+      console.log("[v0] Sequence result:", { sequence, seqError })
+
       let nextNumber = 1
       if (sequence) {
         nextNumber = sequence.current_number + 1
-        await supabase
+        const { error: updateSeqError } = await supabase
           .from('document_sequences')
           .update({ current_number: nextNumber })
           .eq('user_id', user.id)
           .eq('document_type', 'livraison')
           .eq('year', year)
+        
+        if (updateSeqError) {
+          console.log("[v0] Error updating sequence:", updateSeqError)
+        }
       } else {
-        await supabase.from('document_sequences').insert({
+        const { error: insertSeqError } = await supabase.from('document_sequences').insert({
           user_id: user.id,
           document_type: 'livraison',
           prefix: 'BL',
           current_number: 1,
           year,
         })
+        
+        if (insertSeqError) {
+          console.log("[v0] Error inserting sequence:", insertSeqError)
+        }
       }
 
       const blNumber = `BL-${year}-${String(nextNumber).padStart(4, '0')}`
+      console.log("[v0] Generated BL number:", blNumber)
 
       // Create document
+      const documentPayload = {
+        user_id: user.id,
+        company_id: companyId,
+        client_id: repairOrder.clients?.id || null,
+        document_type: 'livraison',
+        document_number: blNumber,
+        document_date: new Date().toISOString().split('T')[0],
+        status: 'draft',
+        subject: `Bon de livraison - ${repairOrder.or_number}`,
+        notes: repairOrder.notes,
+        hide_prices: hidePrice,
+      }
+      console.log("[v0] Document payload:", documentPayload)
+
       const { data: document, error: docError } = await supabase
         .from('documents')
-        .insert({
-          user_id: user.id,
-          company_id: companyId,
-          client_id: repairOrder.clients?.id || null,
-          document_type: 'livraison',
-          document_number: blNumber,
-          document_date: new Date().toISOString().split('T')[0],
-          status: 'draft',
-          subject: `Bon de livraison - ${repairOrder.or_number}`,
-          notes: repairOrder.notes,
-          hide_prices: hidePrice,
-        })
+        .insert(documentPayload)
         .select()
         .single()
+
+      console.log("[v0] Document creation result:", { document, docError })
 
       if (docError) throw docError
 
@@ -258,7 +281,7 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
           totalCost += (assignment.time_spent_minutes / 60) * rate
         }
 
-        await supabase.from('document_lines').insert({
+        const linePayload = {
           document_id: document.id,
           line_order: lineOrder,
           line_type: 'service',
@@ -269,12 +292,21 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
           tva_rate: 20,
           discount_percent: 0,
           discount_amount: 0,
-        })
+        }
+        console.log("[v0] Line payload:", linePayload)
+
+        const { error: lineError } = await supabase.from('document_lines').insert(linePayload)
+        
+        if (lineError) {
+          console.log("[v0] Error inserting line:", lineError)
+          throw lineError
+        }
+        
         lineOrder++
       }
 
       // Update repair order
-      await supabase
+      const { error: updateError } = await supabase
         .from('repair_orders')
         .update({
           status: 'converted',
@@ -282,11 +314,16 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
         })
         .eq('id', id)
 
+      if (updateError) {
+        console.log("[v0] Error updating repair order:", updateError)
+      }
+
+      console.log("[v0] Conversion successful!")
       setConvertDialogOpen(false)
       router.push(`/dashboard/documents/${document.id}`)
-    } catch (error) {
-      console.error('Error converting to delivery note:', error)
-      alert('Erreur lors de la conversion')
+    } catch (error: any) {
+      console.error('[v0] Error converting to delivery note:', error)
+      alert(`Erreur lors de la conversion: ${error?.message || JSON.stringify(error)}`)
     } finally {
       setConverting(false)
     }
