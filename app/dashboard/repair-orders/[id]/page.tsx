@@ -183,6 +183,16 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || !repairOrder) return
 
+      // Get user's default company
+      const { data: userCompany } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .single()
+
+      const companyId = userCompany?.company_id || null
+
       // Generate BL number
       const year = new Date().getFullYear()
       const { data: sequence } = await supabase
@@ -219,6 +229,7 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
         .from('documents')
         .insert({
           user_id: user.id,
+          company_id: companyId,
           client_id: repairOrder.clients?.id || null,
           document_type: 'livraison',
           document_number: blNumber,
