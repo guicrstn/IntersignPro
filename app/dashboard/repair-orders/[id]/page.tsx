@@ -181,28 +181,28 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
     setConverting(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user || !repairOrder) {
-        console.log("[v0] Missing user or repairOrder", { user, repairOrder })
+      if (!user || !repairOrder) return
+
+      // Check if client is assigned
+      if (!repairOrder.clients?.id) {
+        alert('Veuillez associer un client a cet OR avant de le convertir en bon de livraison.')
+        setConverting(false)
         return
       }
 
-      console.log("[v0] Starting conversion for user:", user.id)
-
       // Get user's default company
-      const { data: userCompany, error: companyError } = await supabase
+      const { data: userCompany } = await supabase
         .from('user_companies')
         .select('company_id')
         .eq('user_id', user.id)
         .eq('is_default', true)
         .single()
 
-      console.log("[v0] User company result:", { userCompany, companyError })
-
       const companyId = userCompany?.company_id || null
 
       // Generate BL number
       const year = new Date().getFullYear()
-      const { data: sequence, error: seqError } = await supabase
+      const { data: sequence } = await supabase
         .from('document_sequences')
         .select('current_number')
         .eq('user_id', user.id)
@@ -210,60 +210,44 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
         .eq('year', year)
         .single()
 
-      console.log("[v0] Sequence result:", { sequence, seqError })
-
       let nextNumber = 1
       if (sequence) {
         nextNumber = sequence.current_number + 1
-        const { error: updateSeqError } = await supabase
+        await supabase
           .from('document_sequences')
           .update({ current_number: nextNumber })
           .eq('user_id', user.id)
           .eq('document_type', 'livraison')
           .eq('year', year)
-        
-        if (updateSeqError) {
-          console.log("[v0] Error updating sequence:", updateSeqError)
-        }
       } else {
-        const { error: insertSeqError } = await supabase.from('document_sequences').insert({
+        await supabase.from('document_sequences').insert({
           user_id: user.id,
           document_type: 'livraison',
           prefix: 'BL',
           current_number: 1,
           year,
         })
-        
-        if (insertSeqError) {
-          console.log("[v0] Error inserting sequence:", insertSeqError)
-        }
       }
 
       const blNumber = `BL-${year}-${String(nextNumber).padStart(4, '0')}`
-      console.log("[v0] Generated BL number:", blNumber)
 
       // Create document
-      const documentPayload = {
-        user_id: user.id,
-        company_id: companyId,
-        client_id: repairOrder.clients?.id || null,
-        document_type: 'livraison',
-        document_number: blNumber,
-        document_date: new Date().toISOString().split('T')[0],
-        status: 'draft',
-        subject: `Bon de livraison - ${repairOrder.or_number}`,
-        notes: repairOrder.notes,
-        hide_prices: hidePrice,
-      }
-      console.log("[v0] Document payload:", documentPayload)
-
       const { data: document, error: docError } = await supabase
         .from('documents')
-        .insert(documentPayload)
+        .insert({
+          user_id: user.id,
+          company_id: companyId,
+          client_id: repairOrder.clients.id,
+          document_type: 'livraison',
+          document_number: blNumber,
+          document_date: new Date().toISOString().split('T')[0],
+          status: 'draft',
+          subject: `Bon de livraison - ${repairOrder.or_number}`,
+          notes: repairOrder.notes,
+          hide_prices: hidePrice,
+        })
         .select()
         .single()
-
-      console.log("[v0] Document creation result:", { document, docError })
 
       if (docError) throw docError
 
@@ -281,7 +265,7 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
           totalCost += (assignment.time_spent_minutes / 60) * rate
         }
 
-        const linePayload = {
+        const { error: lineError } = await supabase.from('document_lines').insert({
           document_id: document.id,
           line_order: lineOrder,
           line_type: 'service',
@@ -292,21 +276,14 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
           tva_rate: 20,
           discount_percent: 0,
           discount_amount: 0,
-        }
-        console.log("[v0] Line payload:", linePayload)
+        })
 
-        const { error: lineError } = await supabase.from('document_lines').insert(linePayload)
-        
-        if (lineError) {
-          console.log("[v0] Error inserting line:", lineError)
-          throw lineError
-        }
-        
+        if (lineError) throw lineError
         lineOrder++
       }
 
       // Update repair order
-      const { error: updateError } = await supabase
+      await supabase
         .from('repair_orders')
         .update({
           status: 'converted',
@@ -314,16 +291,11 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
         })
         .eq('id', id)
 
-      if (updateError) {
-        console.log("[v0] Error updating repair order:", updateError)
-      }
-
-      console.log("[v0] Conversion successful!")
       setConvertDialogOpen(false)
       router.push(`/dashboard/documents/${document.id}`)
     } catch (error: any) {
-      console.error('[v0] Error converting to delivery note:', error)
-      alert(`Erreur lors de la conversion: ${error?.message || JSON.stringify(error)}`)
+      console.error('Error converting to delivery note:', error)
+      alert(`Erreur lors de la conversion: ${error?.message || 'Une erreur est survenue'}`)
     } finally {
       setConverting(false)
     }
@@ -394,7 +366,12 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
                     Cette action va creer un bon de livraison a partir de cet OR avec toutes les taches et le temps passe.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
+                <div className="py-4 space-y-4">
+                  {!repairOrder.clients?.id && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+                      Attention : Cet OR n&apos;a pas de client associe. Veuillez d&apos;abord modifier l&apos;OR pour ajouter un client avant de le convertir.
+                    </div>
+                  )}
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="hide-price"
@@ -408,7 +385,10 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
                   <Button variant="outline" onClick={() => setConvertDialogOpen(false)}>
                     Annuler
                   </Button>
-                  <Button onClick={convertToDeliveryNote} disabled={converting}>
+                  <Button 
+                    onClick={convertToDeliveryNote} 
+                    disabled={converting || !repairOrder.clients?.id}
+                  >
                     {converting ? 'Conversion...' : 'Convertir'}
                   </Button>
                 </DialogFooter>
