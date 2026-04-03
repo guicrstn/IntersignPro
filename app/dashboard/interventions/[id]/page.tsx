@@ -35,6 +35,17 @@ export default async function InterventionDetailPage({
     .eq('user_id', user!.id)
     .single()
 
+  // Get linked document if exists
+  let linkedDocument = null
+  if (intervention.linked_document_id) {
+    const { data } = await supabase
+      .from('documents')
+      .select('id, document_number, subject, document_type')
+      .eq('id', intervention.linked_document_id)
+      .single()
+    linkedDocument = data
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -147,6 +158,30 @@ export default async function InterventionDetailPage({
               </p>
             </div>
           </div>
+
+          {/* Linked Document */}
+          {linkedDocument && (
+            <div className="py-6 border-b">
+              <h3 className="font-semibold text-foreground flex items-center gap-2 mb-3">
+                <FileText className="h-4 w-4" />
+                Devis lie
+              </h3>
+              <Link
+                href={`/dashboard/documents/${linkedDocument.id}`}
+                className="flex items-center gap-3 bg-primary/5 hover:bg-primary/10 rounded-lg p-4 transition-colors"
+              >
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-primary">{linkedDocument.document_number}</p>
+                  {linkedDocument.subject && (
+                    <p className="text-sm text-muted-foreground">{linkedDocument.subject}</p>
+                  )}
+                </div>
+              </Link>
+            </div>
+          )}
 
           {/* Description */}
           <div className="py-6 border-b">

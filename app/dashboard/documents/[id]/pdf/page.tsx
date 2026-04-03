@@ -119,6 +119,7 @@ export default function DocumentPDFPage() {
           document={document} 
           company={company} 
           logoBase64={logoBase64}
+          hidePrices={document.hide_prices || false}
         />
       ).toBlob()
       const url = URL.createObjectURL(blob)

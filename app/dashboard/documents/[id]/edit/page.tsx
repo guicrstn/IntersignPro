@@ -1,13 +1,14 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -15,18 +16,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Save, Plus, Trash2, Loader2, Package, Search } from 'lucide-react'
+import {
+  Alert,
+  AlertDescription,
+} from '@/components/ui/alert'
+import { ArrowLeft, Save, Plus, Trash2, Loader2, Package, AlertTriangle } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
-import type { Client, DocumentType, DocumentLine, LineType } from '@/lib/types'
-import { TVA_RATES, DOCUMENT_TYPE_LABELS } from '@/lib/types'
+import type { Client, DocumentType, LineType } from '@/lib/types'
+import { TVA_RATES, DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS } from '@/lib/types'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 
 interface CatalogItem {
@@ -59,82 +63,138 @@ function generateTempId() {
   return `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
 
-function NewDocumentContent() {
+export default function EditDocumentPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const typeParam = searchParams.get('type') as DocumentType || 'devis'
-  const clientParam = searchParams.get('client')
+  const params = useParams()
+  const documentId = params.id as string
 
   const [isLoading, setIsLoading] = useState(false)
-  const [isFetchingClients, setIsFetchingClients] = useState(true)
+  const [isFetching, setIsFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [clients, setClients] = useState<Client[]>([])
   const [catalog, setCatalog] = useState<CatalogItem[]>([])
   const [catalogDialogOpen, setCatalogDialogOpen] = useState(false)
   const [catalogSearch, setCatalogSearch] = useState('')
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null)
+  const [originalStatus, setOriginalStatus] = useState<string>('')
   
   const [formData, setFormData] = useState({
-    document_type: typeParam,
-    client_id: clientParam || '',
+    document_type: 'devis' as DocumentType,
+    document_number: '',
+    client_id: '',
     document_date: new Date().toISOString().split('T')[0],
     validity_date: '',
     subject: '',
     notes: '',
     terms: '',
     hide_prices: false,
+    status: 'draft' as string,
   })
 
-  const [lines, setLines] = useState<LineItem[]>([
-    {
-      id: generateTempId(),
-      line_type: 'service',
-      reference: '',
-description: '',
-  quantity: 1,
-  unit: 'unite',
-  unit_price_ht: 0,
-  tva_rate: 20,
-  discount_type: 'percent' as const,
-  discount_percent: 0,
-  discount_amount: 0,
-  }
-  ])
+  const [lines, setLines] = useState<LineItem[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
-      if (user) {
-        // Fetch clients
-        const { data: clientsData } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('name')
-        
-        if (clientsData) setClients(clientsData)
-
-        // Fetch catalog
-        const { data: catalogData } = await supabase
-          .from('product_catalog')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .order('name')
-        
-        if (catalogData) setCatalog(catalogData)
+      if (!user) {
+        router.push('/auth/login')
+        return
       }
-      setIsFetchingClients(false)
+
+      // Fetch document
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('id', documentId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (docError || !document) {
+        setError('Document non trouve')
+        setIsFetching(false)
+        return
+      }
+
+      setOriginalStatus(document.status)
+      setFormData({
+        document_type: document.document_type,
+        document_number: document.document_number,
+        client_id: document.client_id,
+        document_date: document.document_date,
+        validity_date: document.validity_date || '',
+        subject: document.subject || '',
+        notes: document.notes || '',
+        terms: document.terms || '',
+        hide_prices: document.hide_prices || false,
+        status: document.status,
+      })
+
+      // Fetch document lines
+      const { data: linesData } = await supabase
+        .from('document_lines')
+        .select('*')
+        .eq('document_id', documentId)
+        .order('line_order')
+
+      if (linesData && linesData.length > 0) {
+        setLines(linesData.map(line => ({
+          id: line.id,
+          line_type: line.line_type,
+          reference: line.reference || '',
+          description: line.description || '',
+          quantity: line.quantity,
+          unit: line.unit,
+          unit_price_ht: line.unit_price_ht,
+          tva_rate: line.tva_rate,
+          discount_type: line.discount_amount > 0 ? 'amount' : 'percent',
+          discount_percent: line.discount_percent || 0,
+          discount_amount: line.discount_amount || 0,
+        })))
+      } else {
+        setLines([{
+          id: generateTempId(),
+          line_type: 'service',
+          reference: '',
+          description: '',
+          quantity: 1,
+          unit: 'unite',
+          unit_price_ht: 0,
+          tva_rate: 20,
+          discount_type: 'percent',
+          discount_percent: 0,
+          discount_amount: 0,
+        }])
+      }
+
+      // Fetch clients
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name')
+      
+      if (clientsData) setClients(clientsData)
+
+      // Fetch catalog
+      const { data: catalogData } = await supabase
+        .from('product_catalog')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('name')
+      
+      if (catalogData) setCatalog(catalogData)
+
+      setIsFetching(false)
     }
     fetchData()
-  }, [])
+  }, [documentId, router])
 
   // Calculate totals
   const calculateLineTotals = (line: LineItem) => {
     const subtotal = line.quantity * line.unit_price_ht
-    // Calculate discount based on type
     let discountAmount = 0
     if (line.discount_type === 'percent') {
       discountAmount = subtotal * ((line.discount_percent || 0) / 100)
@@ -171,7 +231,7 @@ description: '',
         unit: 'unite',
         unit_price_ht: 0,
         tva_rate: 20,
-        discount_type: 'percent' as const,
+        discount_type: 'percent',
         discount_percent: 0,
         discount_amount: 0,
       }
@@ -240,76 +300,64 @@ description: '',
       return
     }
 
-    // Generate document number
-    const { data: numberData, error: numberError } = await supabase
-      .rpc('generate_document_number', { 
-        p_user_id: user.id, 
-        p_document_type: formData.document_type 
-      })
-
-    if (numberError) {
-      setError('Erreur lors de la generation du numero')
-      setIsLoading(false)
-      return
-    }
-
-    // Create document
-    const { data: document, error: docError } = await supabase
+    // Update document
+    const { error: docError } = await supabase
       .from('documents')
-      .insert({
-        user_id: user.id,
+      .update({
         client_id: formData.client_id,
-        document_type: formData.document_type,
-        document_number: numberData,
         document_date: formData.document_date,
         validity_date: formData.validity_date || null,
         subject: formData.subject || null,
         notes: formData.notes || null,
         terms: formData.terms || null,
-        status: 'draft',
         hide_prices: formData.hide_prices,
+        updated_at: new Date().toISOString(),
       })
-      .select()
-      .single()
+      .eq('id', documentId)
+      .eq('user_id', user.id)
 
-    if (docError || !document) {
-      setError(docError?.message || 'Erreur lors de la creation')
+    if (docError) {
+      setError(docError.message || 'Erreur lors de la modification')
       setIsLoading(false)
       return
     }
 
-// Add lines
-      const linesToInsert = lines.map((line, index) => ({
-        document_id: document.id,
-        line_order: index,
-        line_type: line.line_type,
-        reference: line.reference || null,
-        description: line.description,
-        quantity: line.quantity,
-        unit: line.unit,
-        unit_price_ht: line.unit_price_ht,
-        tva_rate: line.tva_rate,
-        discount_percent: line.discount_type === 'percent' ? (line.discount_percent || 0) : 0,
-        discount_amount: line.discount_type === 'amount' ? (line.discount_amount || 0) : 0,
-      }))
+    // Delete old lines
+    await supabase
+      .from('document_lines')
+      .delete()
+      .eq('document_id', documentId)
+
+    // Add new lines
+    const linesToInsert = lines.map((line, index) => ({
+      document_id: documentId,
+      line_order: index,
+      line_type: line.line_type,
+      reference: line.reference || null,
+      description: line.description,
+      quantity: line.quantity,
+      unit: line.unit,
+      unit_price_ht: line.unit_price_ht,
+      tva_rate: line.tva_rate,
+      discount_percent: line.discount_type === 'percent' ? (line.discount_percent || 0) : 0,
+      discount_amount: line.discount_type === 'amount' ? (line.discount_amount || 0) : 0,
+    }))
 
     const { error: linesError } = await supabase
       .from('document_lines')
       .insert(linesToInsert)
 
     if (linesError) {
-      // Rollback: delete document
-      await supabase.from('documents').delete().eq('id', document.id)
-      setError('Erreur lors de l\'ajout des lignes')
+      setError('Erreur lors de la modification des lignes')
       setIsLoading(false)
       return
     }
 
-    router.push(`/dashboard/documents/${document.id}`)
+    router.push(`/dashboard/documents/${documentId}`)
     router.refresh()
   }
 
-  if (isFetchingClients) {
+  if (isFetching) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -317,22 +365,44 @@ description: '',
     )
   }
 
+  const isConverted = originalStatus === 'converted'
+  const isSigned = originalStatus === 'signed'
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center gap-4">
         <Button asChild variant="ghost" size="icon">
-          <Link href="/dashboard/documents">
+          <Link href={`/dashboard/documents/${documentId}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Nouveau {DOCUMENT_TYPE_LABELS[formData.document_type as DocumentType]}
-          </h1>
-          <p className="text-muted-foreground">Creez un nouveau document</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground">
+              Modifier {formData.document_number}
+            </h1>
+            <Badge variant="outline">
+              {DOCUMENT_TYPE_LABELS[formData.document_type]}
+            </Badge>
+            <Badge variant="secondary">
+              {DOCUMENT_STATUS_LABELS[formData.status as keyof typeof DOCUMENT_STATUS_LABELS]}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground">Modifiez les informations du document</p>
         </div>
       </div>
+
+      {(isConverted || isSigned) && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Attention :</strong> Ce document a deja ete {isConverted ? 'converti' : 'signe'}. 
+            Toute modification peut affecter la coherence de votre comptabilite. 
+            Assurez-vous de mettre a jour les documents lies si necessaire.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* General Info */}
@@ -344,20 +414,11 @@ description: '',
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>Type de document</Label>
-                <Select
-                  value={formData.document_type}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, document_type: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="devis">Devis</SelectItem>
-                    <SelectItem value="commande">Commande</SelectItem>
-                    <SelectItem value="livraison">Bon de livraison</SelectItem>
-                    <SelectItem value="facture">Facture</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input 
+                  value={DOCUMENT_TYPE_LABELS[formData.document_type]} 
+                  disabled 
+                  className="bg-muted"
+                />
               </div>
               <div className="grid gap-2">
                 <Label>Client *</Label>
@@ -419,7 +480,7 @@ description: '',
                 Ajouter une ligne
               </Button>
             </div>
-            <CardDescription>Ajoutez les prestations et produits</CardDescription>
+            <CardDescription>Modifiez les prestations et produits</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -514,7 +575,7 @@ description: '',
                             <SelectItem value="heure">Heure</SelectItem>
                             <SelectItem value="jour">Jour</SelectItem>
                             <SelectItem value="forfait">Forfait</SelectItem>
-                            <SelectItem value="m2">m²</SelectItem>
+                            <SelectItem value="m2">m2</SelectItem>
                             <SelectItem value="ml">ml</SelectItem>
                           </SelectContent>
                         </Select>
@@ -584,12 +645,8 @@ description: '',
                       </div>
                     </div>
                     <div className="flex justify-end gap-4 text-sm">
-                      <span className="text-muted-foreground">
-                        HT: <span className="font-medium text-foreground">{totalHT.toFixed(2)} €</span>
-                      </span>
-                      <span className="text-muted-foreground">
-                        TTC: <span className="font-medium text-foreground">{totalTTC.toFixed(2)} €</span>
-                      </span>
+                      <span>Total HT: <strong>{totalHT.toFixed(2)} EUR</strong></span>
+                      <span>Total TTC: <strong>{totalTTC.toFixed(2)} EUR</strong></span>
                     </div>
                   </div>
                 )
@@ -605,17 +662,17 @@ description: '',
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Total HT</span>
-                <span className="font-medium">{totals.totalHT.toFixed(2)} €</span>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total HT</span>
+                <span className="font-medium">{totals.totalHT.toFixed(2)} EUR</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>Total TVA</span>
-                <span className="font-medium">{totals.totalTVA.toFixed(2)} €</span>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">TVA</span>
+                <span className="font-medium">{totals.totalTVA.toFixed(2)} EUR</span>
               </div>
-              <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
-                <span>Total TTC</span>
-                <span className="text-primary">{totals.totalTTC.toFixed(2)} €</span>
+              <div className="flex justify-between border-t pt-2">
+                <span className="font-semibold">Total TTC</span>
+                <span className="font-bold text-lg">{totals.totalTTC.toFixed(2)} EUR</span>
               </div>
             </div>
           </CardContent>
@@ -628,11 +685,11 @@ description: '',
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label>Notes (visibles sur le document)</Label>
+              <Label>Notes</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Notes a afficher sur le document..."
+                placeholder="Notes internes ou pour le client..."
                 rows={3}
               />
             </div>
@@ -660,97 +717,80 @@ description: '',
           </CardContent>
         </Card>
 
+        {/* Error */}
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
-        <div className="flex gap-4">
-          <Button type="submit" disabled={isLoading}>
-            <Save className="mr-2 h-4 w-4" />
-            {isLoading ? 'Creation...' : 'Creer le document'}
+        {/* Actions */}
+        <div className="flex justify-end gap-4">
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/documents/${documentId}`}>
+              Annuler
+            </Link>
           </Button>
-          <Button type="button" variant="outline" asChild>
-            <Link href="/dashboard/documents">Annuler</Link>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Enregistrer
+              </>
+            )}
           </Button>
         </div>
       </form>
 
-      {/* Catalog Selection Dialog */}
+      {/* Catalog Dialog */}
       <Dialog open={catalogDialogOpen} onOpenChange={setCatalogDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Selectionner un article du catalogue</DialogTitle>
+            <DialogTitle>Catalogue produits/services</DialogTitle>
             <DialogDescription>
-              Choisissez un produit ou une prestation de votre catalogue
+              Selectionnez un article du catalogue
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="space-y-4">
             <Input
-              placeholder="Rechercher par nom, reference ou categorie..."
+              placeholder="Rechercher..."
               value={catalogSearch}
               onChange={(e) => setCatalogSearch(e.target.value)}
-              className="pl-10"
             />
-          </div>
-
-          <div className="flex-1 overflow-y-auto min-h-0 space-y-2 mt-4">
-            {filteredCatalog.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {catalog.length === 0 ? (
-                  <div>
-                    <Package className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                    <p>Aucun article dans le catalogue</p>
-                    <Button variant="link" asChild className="mt-2">
-                      <Link href="/dashboard/catalog/new">Creer un article</Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <p>Aucun resultat pour "{catalogSearch}"</p>
-                )}
-              </div>
-            ) : (
-              filteredCatalog.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
-                  onClick={() => handleSelectCatalogItem(item)}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium truncate">{item.name}</span>
-                      {item.reference && (
-                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                          {item.reference}
-                        </span>
-                      )}
+            <div className="space-y-2">
+              {filteredCatalog.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Aucun article trouve
+                </p>
+              ) : (
+                filteredCatalog.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted cursor-pointer"
+                    onClick={() => handleSelectCatalogItem(item)}
+                  >
+                    <div>
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.reference && `${item.reference} - `}
+                        {item.unit_price_ht.toFixed(2)} EUR HT
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className={item.product_type === 'product' ? 'text-blue-600' : 'text-green-600'}>
-                        {item.product_type === 'product' ? 'Materiel' : 'Prestation'}
-                      </span>
-                      {item.category && <span>• {item.category}</span>}
-                    </div>
+                    <Badge variant="outline">
+                      {item.product_type === 'product' ? 'Produit' : 'Service'}
+                    </Badge>
                   </div>
-                  <div className="text-right ml-4">
-                    <div className="font-medium">{(item.unit_price_ht || 0).toFixed(2)} € HT</div>
-                    <div className="text-xs text-muted-foreground">TVA {item.tva_rate || 20}%</div>
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
-
-export default function NewDocumentPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-      <NewDocumentContent />
-    </Suspense>
   )
 }

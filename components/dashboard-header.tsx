@@ -26,6 +26,7 @@ import {
   Package,
   CreditCard,
   Key,
+  Wrench,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -33,6 +34,7 @@ import { cn } from '@/lib/utils'
 import type { User } from '@supabase/supabase-js'
 import Image from 'next/image'
 import { LanguageSelector } from '@/components/language-selector'
+import { CompanySelector } from '@/components/company-selector'
 
 interface DashboardHeaderProps {
   user: User
@@ -44,6 +46,7 @@ const navigation = [
   { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
   { name: 'Documents', href: '/dashboard/documents', icon: FileText },
+  { name: 'OR', href: '/dashboard/repair-orders', icon: Wrench },
   { name: 'Catalogue', href: '/dashboard/catalog', icon: Package },
   { name: 'Interventions', href: '/dashboard/interventions', icon: ClipboardList },
   { name: 'Abonnement', href: '/dashboard/subscription', icon: CreditCard },
@@ -126,6 +129,9 @@ export function DashboardHeader({ user, companyName, logoUrl }: DashboardHeaderP
 
       {/* Right side actions */}
       <div className="flex items-center gap-2">
+        {/* Company Selector */}
+        <CompanySelector />
+        
         {/* Language Selector */}
         <LanguageSelector variant="compact" />
 

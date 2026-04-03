@@ -379,9 +379,10 @@ interface DocumentPDFDocumentProps {
   document: DocumentWithDetails
   company: Company | null
   logoBase64?: string | null
+  hidePrices?: boolean
 }
 
-export function DocumentPDFDocument({ document, company, logoBase64 }: DocumentPDFDocumentProps) {
+export function DocumentPDFDocument({ document, company, logoBase64, hidePrices = false }: DocumentPDFDocumentProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       weekday: 'long',
@@ -505,66 +506,74 @@ export function DocumentPDFDocument({ document, company, logoBase64 }: DocumentP
           <View style={styles.table}>
             {/* Table Header */}
             <View style={styles.tableHeader}>
-              <View style={styles.colRef}>
+              <View style={hidePrices ? { width: '15%' } : styles.colRef}>
                 <Text style={styles.tableHeaderText}>Ref.</Text>
               </View>
-              <View style={styles.colDescription}>
+              <View style={hidePrices ? { width: '55%' } : styles.colDescription}>
                 <Text style={styles.tableHeaderText}>Description</Text>
               </View>
-              <View style={styles.colQty}>
+              <View style={hidePrices ? { width: '15%', textAlign: 'center' as const } : styles.colQty}>
                 <Text style={styles.tableHeaderText}>Qte</Text>
               </View>
-              <View style={styles.colUnit}>
+              <View style={hidePrices ? { width: '15%', textAlign: 'center' as const } : styles.colUnit}>
                 <Text style={styles.tableHeaderText}>Unite</Text>
               </View>
-              <View style={styles.colPriceHT}>
-                <Text style={styles.tableHeaderText}>P.U. HT</Text>
-              </View>
-              <View style={styles.colTVA}>
-                <Text style={styles.tableHeaderText}>TVA</Text>
-              </View>
-              <View style={styles.colTotalHT}>
-                <Text style={styles.tableHeaderText}>Total HT</Text>
-              </View>
-              <View style={styles.colTotalTTC}>
-                <Text style={styles.tableHeaderText}>Total TTC</Text>
-              </View>
+              {!hidePrices && (
+                <>
+                  <View style={styles.colPriceHT}>
+                    <Text style={styles.tableHeaderText}>P.U. HT</Text>
+                  </View>
+                  <View style={styles.colTVA}>
+                    <Text style={styles.tableHeaderText}>TVA</Text>
+                  </View>
+                  <View style={styles.colTotalHT}>
+                    <Text style={styles.tableHeaderText}>Total HT</Text>
+                  </View>
+                  <View style={styles.colTotalTTC}>
+                    <Text style={styles.tableHeaderText}>Total TTC</Text>
+                  </View>
+                </>
+              )}
             </View>
             {/* Table Rows */}
             {document.lines?.map((line, index) => (
               <View key={line.id} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-                <View style={styles.colRef}>
+                <View style={hidePrices ? { width: '15%' } : styles.colRef}>
                   <Text style={styles.tableText}>{line.reference || '-'}</Text>
                 </View>
-                <View style={styles.colDescription}>
+                <View style={hidePrices ? { width: '55%' } : styles.colDescription}>
                   <Text style={styles.tableTextBold}>{line.description}</Text>
                   <Text style={styles.tableText}>{line.line_type === 'service' ? 'Prestation' : 'Materiel'}</Text>
                 </View>
-                <View style={styles.colQty}>
+                <View style={hidePrices ? { width: '15%', textAlign: 'center' as const } : styles.colQty}>
                   <Text style={styles.tableText}>{line.quantity}</Text>
                 </View>
-                <View style={styles.colUnit}>
+                <View style={hidePrices ? { width: '15%', textAlign: 'center' as const } : styles.colUnit}>
                   <Text style={styles.tableText}>{line.unit}</Text>
                 </View>
-                <View style={styles.colPriceHT}>
-                  <Text style={styles.tableText}>{formatCurrency(line.unit_price_ht)}</Text>
-                </View>
-                <View style={styles.colTVA}>
-                  <Text style={styles.tableText}>{line.tva_rate}%</Text>
-                </View>
-                <View style={styles.colTotalHT}>
-                  <Text style={styles.tableText}>{formatCurrency(line.total_ht)}</Text>
-                </View>
-                <View style={styles.colTotalTTC}>
-                  <Text style={styles.tableText}>{formatCurrency(line.total_ttc)}</Text>
-                </View>
+                {!hidePrices && (
+                  <>
+                    <View style={styles.colPriceHT}>
+                      <Text style={styles.tableText}>{formatCurrency(line.unit_price_ht)}</Text>
+                    </View>
+                    <View style={styles.colTVA}>
+                      <Text style={styles.tableText}>{line.tva_rate}%</Text>
+                    </View>
+                    <View style={styles.colTotalHT}>
+                      <Text style={styles.tableText}>{formatCurrency(line.total_ht)}</Text>
+                    </View>
+                    <View style={styles.colTotalTTC}>
+                      <Text style={styles.tableText}>{formatCurrency(line.total_ttc)}</Text>
+                    </View>
+                  </>
+                )}
               </View>
             ))}
           </View>
         </View>
 
-        {/* Totals */}
-        {document.totals && (
+        {/* Totals - hide if hidePrices is true */}
+        {document.totals && !hidePrices && (
           <View style={styles.totalsSection}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total HT</Text>

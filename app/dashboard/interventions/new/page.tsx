@@ -32,9 +32,11 @@ function NewInterventionContent() {
   const [formData, setFormData] = useState({
     client_id: preselectedClientId || '',
     description: '',
+    linked_document_id: '',
   })
   const [quoteLines, setQuoteLines] = useState<QuoteLine[]>([])
   const [hasQuoteOption, setHasQuoteOption] = useState(false)
+  const [availableDevis, setAvailableDevis] = useState<{ id: string; document_number: string; subject: string | null }[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,6 +69,31 @@ function NewInterventionContent() {
     fetchData()
   }, [])
 
+  // Fetch devis when client changes
+  useEffect(() => {
+    const fetchDevis = async () => {
+      if (!formData.client_id) {
+        setAvailableDevis([])
+        return
+      }
+
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await supabase
+        .from('documents')
+        .select('id, document_number, subject')
+        .eq('user_id', user.id)
+        .eq('client_id', formData.client_id)
+        .eq('document_type', 'devis')
+        .order('document_date', { ascending: false })
+
+      setAvailableDevis(data || [])
+    }
+    fetchDevis()
+  }, [formData.client_id])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -94,18 +121,19 @@ function NewInterventionContent() {
 
     const interventionNumber = numberData || `INT-${new Date().getFullYear()}-0001`
 
-    const { data: intervention, error: insertError } = await supabase
-      .from('interventions')
-      .insert({
-        user_id: user.id,
-        client_id: formData.client_id,
-        intervention_number: interventionNumber,
-        description: formData.description,
-        date: new Date().toISOString().split('T')[0],
-        status: 'draft',
-        quote_lines: quoteLines.length > 0 ? quoteLines : null,
-        quote_imported_at: quoteLines.length > 0 ? new Date().toISOString() : null,
-      })
+const { data: intervention, error: insertError } = await supabase
+  .from('interventions')
+  .insert({
+  user_id: user.id,
+  client_id: formData.client_id,
+  intervention_number: interventionNumber,
+  description: formData.description,
+  date: new Date().toISOString().split('T')[0],
+  status: 'draft',
+  quote_lines: quoteLines.length > 0 ? quoteLines : null,
+  quote_imported_at: quoteLines.length > 0 ? new Date().toISOString() : null,
+  linked_document_id: formData.linked_document_id || null,
+  })
       .select()
       .single()
 
@@ -173,7 +201,7 @@ function NewInterventionContent() {
                   <Label htmlFor="client">Client *</Label>
                   <Select
                     value={formData.client_id}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value, linked_document_id: '' }))}
                   >
                     <SelectTrigger id="client">
                       <SelectValue placeholder="Selectionnez un client" />
@@ -187,6 +215,32 @@ function NewInterventionContent() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Link to devis */}
+                {formData.client_id && availableDevis.length > 0 && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="linked_document">Lier a un devis (optionnel)</Label>
+                    <Select
+                      value={formData.linked_document_id}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, linked_document_id: value }))}
+                    >
+                      <SelectTrigger id="linked_document">
+                        <SelectValue placeholder="Selectionner un devis" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Aucun devis</SelectItem>
+                        {availableDevis.map((devis) => (
+                          <SelectItem key={devis.id} value={devis.id}>
+                            {devis.document_number}{devis.subject ? ` - ${devis.subject}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Associez cette intervention a un devis existant pour un meilleur suivi.
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="description">Description de l&apos;intervention *</Label>
