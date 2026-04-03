@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ArrowLeft, Save, Plus, Trash2, Loader2, Package, Search } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
 import type { Client, DocumentType, DocumentLine, LineType } from '@/lib/types'
 import { TVA_RATES, DOCUMENT_TYPE_LABELS } from '@/lib/types'
@@ -81,6 +82,7 @@ function NewDocumentContent() {
     subject: '',
     notes: '',
     terms: '',
+    hide_prices: false,
   })
 
   const [lines, setLines] = useState<LineItem[]>([
@@ -265,6 +267,7 @@ description: '',
         notes: formData.notes || null,
         terms: formData.terms || null,
         status: 'draft',
+        hide_prices: formData.hide_prices,
       })
       .select()
       .single()
@@ -642,6 +645,18 @@ description: '',
                 rows={3}
               />
             </div>
+            {(formData.document_type === 'livraison') && (
+              <div className="flex items-center space-x-2 pt-2 border-t">
+                <Checkbox
+                  id="hide-prices"
+                  checked={formData.hide_prices}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hide_prices: checked as boolean }))}
+                />
+                <Label htmlFor="hide-prices" className="text-sm font-normal cursor-pointer">
+                  Masquer les prix sur ce bon de livraison
+                </Label>
+              </div>
+            )}
           </CardContent>
         </Card>
 
