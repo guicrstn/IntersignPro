@@ -135,14 +135,12 @@ export default async function DocumentDetailPage({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {doc.status === 'draft' && (
-            <Button asChild variant="outline">
-              <Link href={`/dashboard/documents/${id}/edit`}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Modifier
-              </Link>
-            </Button>
-          )}
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/documents/${id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Modifier
+            </Link>
+          </Button>
           {(doc.status === 'draft' || doc.status === 'sent') && (
             <DocumentSendSignature
               documentId={id}
