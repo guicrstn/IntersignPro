@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { ArrowLeft, Clock, User, Play, CheckCircle, FileText, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Clock, User, Play, CheckCircle, FileText, Plus, Trash2, Pencil } from 'lucide-react'
 import Link from 'next/link'
 
 interface RepairOrder {
@@ -339,6 +339,14 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
         <div className="flex gap-2">
+          {repairOrder.status !== 'converted' && (
+            <Button variant="outline" asChild>
+              <Link href={`/dashboard/repair-orders/${id}/edit`}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Modifier
+              </Link>
+            </Button>
+          )}
           {repairOrder.status === 'draft' && (
             <Button onClick={() => updateStatus('in_progress')}>
               <Play className="mr-2 h-4 w-4" />
