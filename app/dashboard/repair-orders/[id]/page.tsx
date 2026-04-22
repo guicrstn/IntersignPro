@@ -19,7 +19,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { ArrowLeft, Clock, User, Play, CheckCircle, FileText, Plus, Trash2, Pencil } from 'lucide-react'
+import { ArrowLeft, Clock, User, Play, CheckCircle, FileText, Plus, Trash2, Pencil, UserPlus, X } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 import Link from 'next/link'
 
 interface RepairOrder {
@@ -91,6 +92,15 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
   const [convertDialogOpen, setConvertDialogOpen] = useState(false)
   const [converting, setConverting] = useState(false)
   const [hidePrice, setHidePrice] = useState(false)
+  
+  // Task management states
+  const [addTaskDialogOpen, setAddTaskDialogOpen] = useState(false)
+  const [editTaskDialogOpen, setEditTaskDialogOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [newTask, setNewTask] = useState({ title: '', description: '', estimated_hours: 1 })
+  const [addingTask, setAddingTask] = useState(false)
+  const [assignIntervenantDialogOpen, setAssignIntervenantDialogOpen] = useState(false)
+  const [selectedTaskForAssignment, setSelectedTaskForAssignment] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -175,6 +185,100 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
       .eq('id', assignmentId)
 
     loadData()
+  }
+
+  const addTask = async () => {
+    if (!newTask.title.trim()) return
+    setAddingTask(true)
+    try {
+      const maxOrder = tasks.length > 0 ? Math.max(...tasks.map(t => t.task_order)) : -1
+      
+      await supabase.from('repair_order_tasks').insert({
+        repair_order_id: id,
+        title: newTask.title,
+        description: newTask.description,
+        estimated_hours: newTask.estimated_hours,
+        task_order: maxOrder + 1,
+        status: 'pending',
+      })
+
+      setNewTask({ title: '', description: '', estimated_hours: 1 })
+      setAddTaskDialogOpen(false)
+      loadData()
+    } catch (error) {
+      console.error('Error adding task:', error)
+    } finally {
+      setAddingTask(false)
+    }
+  }
+
+  const updateTask = async () => {
+    if (!editingTask) return
+    try {
+      await supabase
+        .from('repair_order_tasks')
+        .update({
+          title: editingTask.title,
+          description: editingTask.description,
+          estimated_hours: editingTask.estimated_hours,
+        })
+        .eq('id', editingTask.id)
+
+      setEditTaskDialogOpen(false)
+      setEditingTask(null)
+      loadData()
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
+  }
+
+  const deleteTask = async (taskId: string) => {
+    if (!confirm('Supprimer cette tache ?')) return
+    try {
+      // Delete assignments first
+      await supabase.from('task_assignments').delete().eq('task_id', taskId)
+      // Then delete task
+      await supabase.from('repair_order_tasks').delete().eq('id', taskId)
+      loadData()
+    } catch (error) {
+      console.error('Error deleting task:', error)
+    }
+  }
+
+  const assignIntervenant = async (intervenantId: string) => {
+    if (!selectedTaskForAssignment) return
+    try {
+      // Check if already assigned
+      const existing = assignments.find(
+        a => a.task_id === selectedTaskForAssignment && a.intervenant_id === intervenantId
+      )
+      if (existing) {
+        alert('Cet intervenant est deja assigne a cette tache')
+        return
+      }
+
+      await supabase.from('task_assignments').insert({
+        task_id: selectedTaskForAssignment,
+        intervenant_id: intervenantId,
+        time_spent_minutes: 0,
+      })
+
+      setAssignIntervenantDialogOpen(false)
+      setSelectedTaskForAssignment(null)
+      loadData()
+    } catch (error) {
+      console.error('Error assigning intervenant:', error)
+    }
+  }
+
+  const removeAssignment = async (assignmentId: string) => {
+    if (!confirm('Retirer cet intervenant de la tache ?')) return
+    try {
+      await supabase.from('task_assignments').delete().eq('id', assignmentId)
+      loadData()
+    } catch (error) {
+      console.error('Error removing assignment:', error)
+    }
   }
 
   const convertToDeliveryNote = async () => {
@@ -453,38 +557,90 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Taches</CardTitle>
-          <CardDescription>Suivez l&apos;avancement et le temps passe par intervenant</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Taches</CardTitle>
+            <CardDescription>Suivez l&apos;avancement et le temps passe par intervenant</CardDescription>
+          </div>
+          {repairOrder.status !== 'converted' && (
+            <Button onClick={() => setAddTaskDialogOpen(true)} size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Ajouter une tache
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
+          {tasks.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">Aucune tache. Cliquez sur &quot;Ajouter une tache&quot; pour commencer.</p>
+          )}
           {tasks.map((task) => {
             const taskAssignments = assignments.filter(a => a.task_id === task.id)
             return (
               <div key={task.id} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-medium">{task.title}</h4>
                     {task.description && (
                       <p className="text-sm text-muted-foreground">{task.description}</p>
                     )}
+                    {task.estimated_hours > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">Estimation: {task.estimated_hours}h</p>
+                    )}
                   </div>
-                  <Select value={task.status} onValueChange={(v) => updateTaskStatus(task.id, v)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">A faire</SelectItem>
-                      <SelectItem value="in_progress">En cours</SelectItem>
-                      <SelectItem value="completed">Termine</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select value={task.status} onValueChange={(v) => updateTaskStatus(task.id, v)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">A faire</SelectItem>
+                        <SelectItem value="in_progress">En cours</SelectItem>
+                        <SelectItem value="completed">Termine</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {repairOrder.status !== 'converted' && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingTask(task)
+                            setEditTaskDialogOpen(true)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteTask(task.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                {taskAssignments.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Temps par intervenant</Label>
-                    {taskAssignments.map((assignment) => (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm text-muted-foreground">Intervenants</Label>
+                    {repairOrder.status !== 'converted' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTaskForAssignment(task.id)
+                          setAssignIntervenantDialogOpen(true)
+                        }}
+                      >
+                        <UserPlus className="mr-2 h-3 w-3" />
+                        Assigner
+                      </Button>
+                    )}
+                  </div>
+                  {taskAssignments.length > 0 ? (
+                    taskAssignments.map((assignment) => (
                       <div key={assignment.id} className="flex items-center gap-3 bg-secondary/50 rounded-lg p-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span className="flex-1">{assignment.intervenants?.name}</span>
@@ -514,20 +670,159 @@ export default function RepairOrderDetailPage({ params }: { params: Promise<{ id
                             }}
                           />
                           <span className="text-sm">min</span>
+                          {repairOrder.status !== 'converted' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => removeAssignment(assignment.id)}
+                            >
+                              <X className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {taskAssignments.length === 0 && (
-                  <p className="text-sm text-muted-foreground italic">Aucun intervenant assigne</p>
-                )}
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Aucun intervenant assigne</p>
+                  )}
+                </div>
               </div>
             )
           })}
         </CardContent>
       </Card>
+
+      {/* Add Task Dialog */}
+      <Dialog open={addTaskDialogOpen} onOpenChange={setAddTaskDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajouter une tache</DialogTitle>
+            <DialogDescription>Ajoutez une nouvelle tache a cet ordre de reparation.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="task-title">Titre *</Label>
+              <Input
+                id="task-title"
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="Ex: Remplacement ecran"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="task-desc">Description</Label>
+              <Textarea
+                id="task-desc"
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                placeholder="Details de la tache..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="task-hours">Heures estimees</Label>
+              <Input
+                id="task-hours"
+                type="number"
+                min="0"
+                step="0.5"
+                value={newTask.estimated_hours}
+                onChange={(e) => setNewTask({ ...newTask, estimated_hours: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddTaskDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={addTask} disabled={addingTask || !newTask.title.trim()}>
+              {addingTask ? 'Ajout...' : 'Ajouter'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={editTaskDialogOpen} onOpenChange={setEditTaskDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la tache</DialogTitle>
+          </DialogHeader>
+          {editingTask && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-task-title">Titre *</Label>
+                <Input
+                  id="edit-task-title"
+                  value={editingTask.title}
+                  onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-task-desc">Description</Label>
+                <Textarea
+                  id="edit-task-desc"
+                  value={editingTask.description || ''}
+                  onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-task-hours">Heures estimees</Label>
+                <Input
+                  id="edit-task-hours"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={editingTask.estimated_hours}
+                  onChange={(e) => setEditingTask({ ...editingTask, estimated_hours: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTaskDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={updateTask} disabled={!editingTask?.title.trim()}>
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Intervenant Dialog */}
+      <Dialog open={assignIntervenantDialogOpen} onOpenChange={setAssignIntervenantDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assigner un intervenant</DialogTitle>
+            <DialogDescription>Selectionnez un intervenant a assigner a cette tache.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-2">
+            {intervenants.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                Aucun intervenant disponible. <Link href="/dashboard/settings/intervenants" className="text-primary underline">Creer un intervenant</Link>
+              </p>
+            ) : (
+              intervenants.map((intervenant) => (
+                <Button
+                  key={intervenant.id}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => assignIntervenant(intervenant.id)}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  {intervenant.name}
+                </Button>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignIntervenantDialogOpen(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {repairOrder.description && (
         <Card>
